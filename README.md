@@ -226,4 +226,4 @@ This architecture is ready to extend with:
 
 ## 📄 License
 
-MIT — free to use and modify.
+Commercial License
