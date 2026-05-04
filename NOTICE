@@ -1,0 +1,12 @@
+Lexora (this product) may include third-party open-source software.
+
+================================================================================
+Lesson board («Урок на доске»)
+================================================================================
+
+The in-product collaborative lesson board is implemented by Lexora using
+standard browser APIs (HTML Canvas 2D). It does not embed the Excalidraw
+library or other third-party whiteboard UI components.
+
+See also: frontend/public/third-party-notices.txt for notices shipped with the
+web application.

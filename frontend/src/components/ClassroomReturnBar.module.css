@@ -1,0 +1,27 @@
+.bar {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.12), transparent 55%);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand-light);
+  text-decoration: none;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  background: rgba(124, 58, 237, 0.08);
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.link:hover {
+  background: rgba(124, 58, 237, 0.14);
+  border-color: rgba(139, 92, 246, 0.55);
+  color: var(--text);
+}

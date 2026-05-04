@@ -1,0 +1,182 @@
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.tab {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text2);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.tab:hover {
+  border-color: var(--brand);
+  color: var(--text);
+}
+
+.tabActive {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  font-weight: 600;
+}
+
+.tabActive:hover {
+  color: #fff;
+  border-color: var(--brand);
+}
+
+.headerRange {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px;
+  line-height: 1.35;
+}
+
+.headerSub {
+  font-size: 12px;
+  color: var(--text3);
+  margin: 0 0 16px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.counter {
+  float: right;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text3);
+}
+
+.textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.footer {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.saveBtn {
+  width: 100%;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.45;
+  margin: 0 0 14px;
+}
+
+.actionsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.overlapPanel {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.overlapTitle {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.overlapLead {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.45;
+}
+
+.overlapList {
+  margin: 0 0 14px;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.overlapRange {
+  font-weight: 600;
+}
+
+.overlapName {
+  color: var(--text2);
+}
+
+.overlapActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.overlapHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text3);
+  line-height: 1.4;
+}
+
+.studentLine {
+  font-size: 14px;
+  color: var(--text);
+  margin: 0 0 12px;
+}
+
+.lessonMeta {
+  font-size: 13px;
+  color: var(--text2);
+  margin: 0 0 14px;
+}
+
+.recordingRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text);
+  margin: 0 0 12px;
+  cursor: pointer;
+}
+
+.recordingRow input {
+  margin-top: 3px;
+}

@@ -1,0 +1,17 @@
+Lexora — third-party open-source notices (shipped with this web app)
+======================================================================
+
+Lesson board (classroom)
+------------------------
+The «lesson board» / shared classroom drawing surface is implemented by Lexora
+using the browser’s built-in Canvas 2D APIs. It is not an embedded copy of
+Excalidraw or another third-party whiteboard product.
+
+Classroom translator
+--------------------
+The optional in-class «translator» sends short text to the MyMemory translation
+API (translated.net) over HTTPS. It is a third-party service, not hosted by
+Lexora.
+
+Other dependencies (npm packages) used elsewhere in this build may have their
+own licenses in bundle metadata or repository documentation.

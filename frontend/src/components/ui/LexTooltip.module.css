@@ -1,0 +1,17 @@
+.content {
+  z-index: 4800;
+  max-width: 240px;
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  box-shadow: var(--shadow-md);
+}
+
+.arrow {
+  fill: var(--bg3);
+}

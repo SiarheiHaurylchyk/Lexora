@@ -1,0 +1,34 @@
+# Dependencies & outputs (образ ставит зависимости сам; dist собирается внутри build-stage)
+node_modules
+dist
+build
+
+# Git & метаданные репозитория
+.git
+.gitattributes
+
+# Секреты и локальный env (в образ передаются ARG из Dockerfile / compose)
+.env
+.env.*
+
+# Кэш и артефакты сборки/линта
+.vite
+*.tsbuildinfo
+coverage
+.nyc_output
+*.lcov
+
+# Логи
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE и ОС
+.idea
+.vscode
+*.swp
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini

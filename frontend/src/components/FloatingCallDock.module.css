@@ -1,0 +1,87 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 3999;
+}
+
+.shellPip {
+  position: fixed;
+  top: 72px;
+  right: 16px;
+  width: min(360px, calc(100vw - 32px));
+  z-index: 4001;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: var(--surface, #1e1e28);
+  display: flex;
+  flex-direction: column;
+}
+
+.shellMax {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(1120px, 96vw);
+  height: min(720px, calc(100vh - 48px));
+  z-index: 4001;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: var(--surface, #1e1e28);
+  display: flex;
+  flex-direction: column;
+}
+
+.chrome {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2, #c4c4d4);
+}
+
+.chromeBtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.chromeBtns button {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text, #f4f4f8);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.chromeBtns button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hangup {
+  border-color: rgba(239, 68, 68, 0.45) !important;
+  color: #fca5a5 !important;
+}
+
+.video {
+  flex: 1;
+  min-height: 180px;
+  position: relative;
+}
+
+.shellPip .video {
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+}

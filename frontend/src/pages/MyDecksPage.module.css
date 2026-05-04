@@ -1,0 +1,142 @@
+.page {
+  width: 100%;
+  max-width: none;
+  padding: 40px 0;
+  box-sizing: border-box;
+}
+
+.greeting {
+  margin-bottom: 40px;
+}
+
+.greetTitle {
+  font-size: 36px;
+  font-family: var(--font-display);
+  margin-bottom: 6px;
+}
+
+.greetWave {
+  display: inline-block;
+  vertical-align: -0.12em;
+  color: var(--accent);
+}
+
+.greetSub {
+  color: var(--text2);
+  font-size: 16px;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 900px) {
+  .statsRow { grid-template-columns: repeat(2, 1fr); }
+}
+
+.statCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+}
+
+.statHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: var(--text3);
+  font-weight: 500;
+}
+
+.statIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.95;
+}
+
+.btnIconLeft {
+  display: inline-flex;
+  margin-right: 2px;
+}
+
+.statValue {
+  font-size: 32px;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.searchWrap {
+  position: relative;
+  flex: 1;
+  max-width: 360px;
+}
+
+.searchIconWrap {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--accent);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.searchInput { padding-left: 42px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.skeleton { height: 180px; border-radius: var(--radius-lg); }
+
+.empty {
+  text-align: center;
+  padding: 80px 24px;
+}
+
+.emptyIcon {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  color: var(--brand-light);
+  opacity: 0.95;
+}
+
+.emptyIconMuted {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  color: var(--text3);
+  opacity: 0.55;
+}
+
+.emptyTitle {
+  font-size: 24px;
+  margin-bottom: 12px;
+  font-family: var(--font-display);
+}
+
+.emptyText {
+  color: var(--text2);
+  margin-bottom: 28px;
+}

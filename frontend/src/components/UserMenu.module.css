@@ -1,0 +1,207 @@
+.wrap {
+  position: relative;
+}
+
+.trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.trigger:hover {
+  border-color: var(--border2);
+}
+
+.triggerOpen {
+  border-color: var(--brand);
+  background: var(--surface2);
+}
+
+.triggerHeader {
+  width: auto;
+  padding: 4px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.triggerHeader:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.triggerHeader.triggerOpen {
+  background: rgba(124, 58, 237, 0.15);
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand), var(--accent));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.avatarImg {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border2);
+}
+
+.avatarHeader {
+  width: 38px;
+  height: 38px;
+  font-size: 15px;
+}
+
+.avatarImgHeader {
+  width: 38px;
+  height: 38px;
+}
+
+.identity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.role {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+/**
+ * Fixed menu panel (position set inline from JS). Portal’d to document.body
+ * so parent sidebar overflow cannot clip it.
+ */
+.popover {
+  position: fixed;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  z-index: 4000;
+  max-width: min(320px, calc(100vw - 24px));
+  max-height: min(420px, calc(100vh - 24px));
+  overflow-y: auto;
+}
+
+.popHeader {
+  padding: 10px 12px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+
+.popName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.popEmail {
+  font-size: 12px;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.itemAccent {
+  color: var(--brand-light);
+  font-weight: 600;
+}
+
+.itemDanger {
+  color: var(--danger);
+}
+
+.itemIcon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text3);
+}
+
+.item:hover .itemIcon {
+  color: var(--text2);
+}
+
+.itemAccent .itemIcon {
+  color: var(--brand-light);
+}
+
+.itemDanger .itemIcon {
+  color: var(--danger);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 4px;
+}

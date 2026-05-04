@@ -1,0 +1,755 @@
+/**
+ * Classroom shell — uses global Lexora tokens so it matches the rest of the app.
+ */
+
+.lessonBlockAnchor {
+  scroll-margin-top: 96px;
+}
+
+.selectNative {
+  flex: 1;
+  min-width: 200px;
+  max-width: 440px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.wrapper {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 42%, var(--bg3) 100%);
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+.topBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 16px;
+  padding: 10px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 96;
+}
+
+.topLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  justify-self: start;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.backLink:hover {
+  color: var(--text);
+  border-color: var(--border2);
+  background: var(--bg4);
+}
+
+.peerThumb {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--brand), var(--brand-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-brand);
+}
+
+.tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  justify-content: center;
+  justify-self: center;
+  grid-column: 2;
+  min-width: 0;
+}
+
+.tab {
+  position: relative;
+  padding: 10px 20px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 10px 10px 0 0;
+  transition: color var(--transition), background var(--transition);
+}
+
+.tab:hover {
+  color: var(--text2);
+}
+
+.tabActive {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tabActive::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--accent), var(--brand-light));
+}
+
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 8px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.topRight {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+  justify-self: end;
+  grid-column: 3;
+  min-width: 0;
+}
+
+.topBarExtras {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.topBarLang {
+  max-width: 118px;
+}
+
+@media (max-width: 720px) {
+  .topBar {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+    row-gap: 10px;
+    padding-bottom: 12px;
+  }
+
+  .tabs {
+    grid-column: 1;
+    justify-self: stretch;
+    order: 3;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+    margin-top: 2px;
+  }
+
+  .topLeft {
+    order: 1;
+  }
+
+  .topRight {
+    grid-column: 1;
+    order: 2;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+}
+
+.avatarPair {
+  display: flex;
+  align-items: center;
+}
+
+.avatarPair .avatar:not(:first-child) {
+  margin-left: -10px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  border: 2px solid var(--bg);
+  flex-shrink: 0;
+}
+
+.avatarMe {
+  background: linear-gradient(135deg, var(--accent), var(--brand));
+}
+
+.avatarPeer {
+  background: linear-gradient(135deg, var(--success), #059669);
+}
+
+.body {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 520px;
+}
+
+.toolDock {
+  width: 56px;
+  flex-shrink: 0;
+  padding: 20px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border-right: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.toolBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  transition: background var(--transition), color var(--transition), border-color var(--transition),
+    transform 0.12s;
+}
+
+.toolBtn:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  transform: translateY(-1px);
+}
+
+.toolBtnActive {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.toolBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg2);
+}
+
+.mainColumn {
+  flex: 1;
+  min-width: 0;
+  padding: 24px 28px 48px;
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
+}
+
+.rightRail {
+  width: 260px;
+  flex-shrink: 0;
+  padding: 24px 20px 32px;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: var(--bg2);
+  position: sticky;
+  top: 57px;
+  align-self: flex-start;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+
+.callCard {
+  padding: 18px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.callCardHint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.45;
+}
+
+.callCardIcon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.callBtn {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: none;
+  font: inherit;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--success), #059669);
+  color: #fff;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--success) 35%, transparent);
+  transition: transform 0.12s, filter var(--transition);
+}
+
+.callBtn:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.callBtn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.recordingSettingsHint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text3);
+}
+
+.recordingSettingsLink {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.recordingSettingsLink:hover {
+  text-decoration: underline;
+}
+
+.sectionNavTitle {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  margin: 0 0 12px;
+}
+
+.jumpStudentWrap {
+  margin: 0 0 14px;
+}
+
+.jumpStudentLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+  margin: 0 0 6px;
+}
+
+.jumpStudentWrap .selectNative {
+  width: 100%;
+}
+
+.jumpStudentHelp {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text3);
+}
+
+.sectionNavList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sectionNavBtn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background var(--transition), color var(--transition);
+}
+
+.sectionNavBtn:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.sectionNavBtnActive {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
+}
+
+.sectionDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border2);
+  flex-shrink: 0;
+}
+
+.sectionNavBtnActive .sectionDot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.contentTitle {
+  font-size: 28px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  margin: 0 0 12px;
+  letter-spacing: -0.02em;
+}
+
+.contentLead {
+  font-size: 16px;
+  color: var(--text2);
+  line-height: 1.55;
+  margin: 0 0 28px;
+  max-width: 62ch;
+}
+
+.lessonSectionPageTitle {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  margin: 0 0 18px;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.segment {
+  scroll-margin-top: 100px;
+  margin-bottom: 28px;
+}
+
+.card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 22px 24px;
+  margin-bottom: 18px;
+}
+
+.cardTitle {
+  font-size: 17px;
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+
+.cardBody {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.cardBody:last-child {
+  margin-bottom: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btnPrimary {
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  border: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--accent), #0891b2);
+  color: #0f172a;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.btnGhost {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--surface2);
+  color: var(--text2);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btnGhost:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.mediaPlaceholder {
+  margin-top: 16px;
+  border-radius: var(--radius-lg);
+  min-height: 180px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--brand) 18%, var(--bg3)),
+    color-mix(in srgb, var(--accent) 12%, var(--bg3))
+  );
+  border: 1px dashed var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  font-size: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+.hwCardDone {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+.hwMeta {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 8px;
+}
+
+.consentRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.consentRow input {
+  margin-top: 3px;
+}
+
+.loadingSkeleton {
+  padding: 24px;
+}
+
+.lessonSwitchBar {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, var(--bg3));
+}
+
+.lessonSwitchLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 10px;
+}
+
+.lessonSwitchRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lessonSwitchSelect {
+  flex: 1;
+  min-width: 200px;
+  max-width: 420px;
+  padding: 12px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface2) 88%, transparent);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lessonSwitchThumb {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: linear-gradient(
+      165deg,
+      #38bdf8 0%,
+      #0ea5e9 28%,
+      #0369a1 52%,
+      #f59e0b 52%,
+      #fbbf24 68%,
+      #fef3c7 100%
+    ),
+    linear-gradient(90deg, #e11d48 0%, #f43f5e 18%, #fb7185 36%, transparent 36%),
+    linear-gradient(180deg, #1e3a5f 0%, #0f172a 100%);
+  background-blend-mode: soft-light, multiply, normal;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 12%, transparent);
+}
+
+.lessonSwitchHelp {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text3);
+}
+
+@media (max-width: 1100px) {
+  .body {
+    flex-wrap: wrap;
+  }
+
+  .toolDock {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 12px;
+  }
+
+  .mainColumn {
+    order: 2;
+    flex: 1 1 100%;
+    max-height: none;
+  }
+
+  .rightRail {
+    order: 3;
+    width: 100%;
+    position: relative;
+    top: 0;
+    max-height: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .callCard {
+    flex: 1 1 240px;
+  }
+
+  .sectionNavWrap {
+    flex: 2 1 280px;
+  }
+}
+
+@media (max-width: 640px) {
+  .tabs {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .tab {
+    padding-left: 14px;
+    padding-right: 14px;
+    font-size: 14px;
+  }
+
+  .topBar {
+    flex-wrap: wrap;
+  }
+
+  .peerThumb {
+    display: none;
+  }
+}

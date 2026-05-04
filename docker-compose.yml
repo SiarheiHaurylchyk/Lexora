@@ -1,0 +1,202 @@
+# Lexora + встроенный Jitsi Meet для локальной разработки в Docker.
+#
+# Lexora: http://localhost:3000/class/...
+# Jitsi (HTTP): http://localhost:8000 — встроенный звонок через iframe (без External API / без TLS).
+#
+# Переменные окружения (файл .env в корне — по желанию):
+#   LEXORA_JITSI_BASE_URL=http://localhost:8000
+#   VITE_JITSI_ALLOW_LOCALHOST=true
+#   XAI_API_KEY=... — чат Grok (LEXORA_AI_PROVIDER=xai или grok) и нейро-озвучка /ai
+#   LEXORA_AI_PROVIDER=xai — см. backend application.properties
+#
+# Локальный LLM в Docker (без облачного chat API): профиль ollama
+#   docker compose --profile ollama up -d
+# В .env:
+#   LEXORA_AI_PROVIDER=ollama
+#   OLLAMA_BASE_URL=http://ollama:11434
+#   OLLAMA_MODEL=llama3.2
+# Скачать модель (один раз): docker exec -it lexora-ollama ollama pull llama3.2
+# GPU (Linux / NVIDIA Container Toolkit): раскомментируйте deploy в сервисе ollama.
+#
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: lexora-postgres
+    environment:
+      POSTGRES_DB: lexora_db
+      POSTGRES_USER: lexora_user
+      POSTGRES_PASSWORD: lexora_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lexora_user -d lexora_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lexora-backend
+    # Явно подмешивает корневой .env в контейнер (вместе с блоком environment ниже).
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lexora_db
+      SPRING_DATASOURCE_USERNAME: lexora_user
+      SPRING_DATASOURCE_PASSWORD: lexora_password
+      APP_JWT_SECRET: LexoraSecretKey2024VeryLongSecretKeyForJWTSigning1234567890ABCDEF
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost,http://127.0.0.1:3000
+      LEXORA_JITSI_BASE_URL: ${LEXORA_JITSI_BASE_URL:-http://localhost:8000}
+      # AI tutor: mock | groq | ollama | xai | deepseek — см. backend application.properties
+      LEXORA_AI_PROVIDER: ${LEXORA_AI_PROVIDER:-mock}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      # true: AI только с JWT. false: см. LEXORA_AI_REQUIRE_LOGIN в application.properties
+      LEXORA_AI_REQUIRE_LOGIN: ${LEXORA_AI_REQUIRE_LOGIN:-true}
+      # Whisper STT на /ai (русский микрофон); ключ gsk_… с console.groq.com
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+    restart: unless-stopped
+
+  # Open-weight inference — только с флагом: docker compose --profile ollama up -d
+  ollama:
+    image: ollama/ollama:latest
+    container_name: lexora-ollama
+    profiles: ["ollama"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    # Раскомментируйте для NVIDIA GPU (хост с nvidia-container-toolkit):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_JITSI_EXTRA_HOSTS: ${VITE_JITSI_EXTRA_HOSTS:-}
+        VITE_JITSI_ALLOW_LOCALHOST: ${VITE_JITSI_ALLOW_LOCALHOST:-true}
+    container_name: lexora-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Jitsi (локальный HTTP, см. infra/jitsi/local.docker.env) ---
+  jitsi-web:
+    image: jitsi/web:stable-9584
+    container_name: lexora-jitsi-web
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+      - "8443:443"
+    volumes:
+      - ./infra/jitsi/jitsi-meet-cfg/web:/config
+      - ./infra/jitsi/http-local-custom-config.js:/config/custom-config.js:ro
+      - ./infra/jitsi/http-local-custom-interface_config.js:/config/custom-interface_config.js:ro
+      - ./infra/jitsi/jitsi-meet-cfg/web/crontabs:/var/spool/cron/crontabs
+      - ./infra/jitsi/jitsi-meet-cfg/transcripts:/usr/share/jitsi-meet/transcripts
+    env_file:
+      - infra/jitsi/local.docker.env
+    networks:
+      meet.jitsi:
+    depends_on:
+      - jitsi-jvb
+
+  jitsi-prosody:
+    image: jitsi/prosody:stable-9584
+    container_name: lexora-jitsi-prosody
+    restart: unless-stopped
+    expose:
+      - "5222"
+      - "5269"
+      - "5347"
+      - "5280"
+    volumes:
+      - ./infra/jitsi/jitsi-meet-cfg/prosody/config:/config
+      - ./infra/jitsi/jitsi-meet-cfg/prosody/prosody-plugins-custom:/prosody-plugins-custom
+    env_file:
+      - infra/jitsi/local.docker.env
+    networks:
+      meet.jitsi:
+        aliases:
+          - xmpp.meet.jitsi
+    # Jicofo/JVB ждут healthy Prosody. Не использовать bash /dev/tcp — в образе часто не работает → unhealthy.
+    # wget есть в jitsi/prosody; Host должен совпадать с XMPP_DOMAIN (meet.jitsi).
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider --timeout=3 --header='Host: meet.jitsi' http://127.0.0.1:5280/health || wget -q --spider --timeout=3 --header='Host: meet.jitsi' http://127.0.0.1:5280/http-bind",
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 25
+      start_period: 120s
+
+  jitsi-jicofo:
+    image: jitsi/jicofo:stable-9584
+    container_name: lexora-jitsi-jicofo
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8888:8888"
+    volumes:
+      - ./infra/jitsi/jitsi-meet-cfg/jicofo:/config
+    env_file:
+      - infra/jitsi/local.docker.env
+    depends_on:
+      jitsi-prosody:
+        condition: service_healthy
+    networks:
+      meet.jitsi:
+
+  jitsi-jvb:
+    image: jitsi/jvb:stable-9584
+    container_name: lexora-jitsi-jvb
+    restart: unless-stopped
+    ports:
+      - "10000:10000/udp"
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - ./infra/jitsi/jitsi-meet-cfg/jvb:/config
+    env_file:
+      - infra/jitsi/local.docker.env
+    depends_on:
+      jitsi-prosody:
+        condition: service_healthy
+    networks:
+      meet.jitsi:
+
+networks:
+  meet.jitsi:
+
+volumes:
+  postgres_data:
+  ollama_data:

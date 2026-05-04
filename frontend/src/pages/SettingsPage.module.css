@@ -1,0 +1,91 @@
+.page {
+  width: 100%;
+  max-width: none;
+  padding: 40px 0;
+  box-sizing: border-box;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  color: var(--text2);
+  margin-bottom: 32px;
+}
+
+.tabBar {
+  display: flex;
+  gap: 6px;
+  background: var(--surface);
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 500;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.tabActive {
+  background: var(--bg3);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--border2);
+}
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+
+.sectionHelp {
+  color: var(--text2);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+
+.actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.inlineIcon {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-right: 4px;
+  color: var(--brand-light);
+}

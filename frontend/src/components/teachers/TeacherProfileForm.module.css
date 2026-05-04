@@ -1,0 +1,109 @@
+.wrap {
+  margin-top: 32px;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.sub {
+  color: var(--text2);
+  font-size: 14px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 6px;
+  margin-top: 14px;
+}
+
+.input,
+.textarea {
+  width: 100%;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 88px;
+}
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.checkRow input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+}
+
+.certSectionTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  margin: 24px 0 6px;
+}
+
+.certHelp {
+  font-size: 13px;
+  color: var(--text3);
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+.certCard {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+.certCardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.certCardLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+}
+
+.certRemove {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.certRemove:hover {
+  text-decoration: underline;
+}
+
+.addCert {
+  margin-bottom: 20px;
+}

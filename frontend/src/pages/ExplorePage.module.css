@@ -1,0 +1,85 @@
+.page {
+  width: 100%;
+  max-width: none;
+  padding: 40px 0;
+  box-sizing: border-box;
+}
+
+.head { margin-bottom: 36px; }
+
+.title {
+  font-size: 36px;
+  font-family: var(--font-display);
+  margin-bottom: 8px;
+}
+
+.subtitle { color: var(--text2); font-size: 16px; }
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.searchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.searchInput { padding-left: 44px; }
+
+.spin {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+.langChips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.found { color: var(--text3); font-size: 14px; margin-bottom: 20px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.skeleton { height: 180px; border-radius: var(--radius-lg); }
+
+.empty {
+  text-align: center;
+  padding: 80px 24px;
+}
+
+.emptyIcon { font-size: 56px; margin-bottom: 16px; }
+
+.emptyTitle {
+  font-size: 22px;
+  margin-bottom: 12px;
+  font-family: var(--font-display);
+}
+
+.emptyText { color: var(--text2); margin-bottom: 24px; }
+
+.loadMoreWrap { text-align: center; margin-top: 32px; }

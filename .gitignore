@@ -1,0 +1,52 @@
+# --- Secrets & local env (Docker Compose читает корневой `.env`; не коммитьте реальные ключи) ---
+.env
+.env.*
+!.env.example
+
+# Локальные переопределения Spring без секретов в репозитории
+backend/src/main/resources/application-local.properties
+backend/src/main/resources/application-local.yml
+
+# --- Dependencies & build (frontend / Node) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# --- Build & tooling (backend / Java · Maven) ---
+backend/target/
+*.class
+hs_err_pid*
+replay_pid*
+
+# --- Logs & temp ---
+*.log
+logs/
+*.tmp
+*.temp
+*.swp
+*~
+
+# --- Tests & coverage ---
+coverage/
+.nyc_output/
+*.lcov
+
+# --- IDE ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+*.code-workspace
+
+# VS Code: личные настройки; при необходимости закоммитьте общие через ! исключения
+.vscode/*
+!.vscode/extensions.json
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
