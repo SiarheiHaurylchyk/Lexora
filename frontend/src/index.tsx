@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
-import { store } from './store';
-import './i18n/config';
+import { store } from './_old/store';
+import './_old/i18n/config';
 import './index.css';
 import App from './App';
 
