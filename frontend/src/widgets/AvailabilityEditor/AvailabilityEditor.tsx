@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@ui';
 
 import {
@@ -22,6 +23,7 @@ import {
 } from '@/shared/lib/calendar';
 import { classNames } from '@/shared/lib/classNames';
 import { useConfirm } from '@/shared/lib/confirm';
+import { useApiQuery } from '@/shared/lib/query';
 
 export type AvailabilityEditorVariant = 'default' | 'page';
 
@@ -60,8 +62,6 @@ export function AvailabilityEditor({
     d.setHours(0, 0, 0, 0);
     return startOfWeek(d);
   });
-  const [slots, setSlots] = useState<SlotDTO[]>([]);
-  const [loading, setLoading] = useState(false);
   const [meetingModalSlot, setMeetingModalSlot] = useState<SlotDTO | null>(
     null,
   );
@@ -70,6 +70,7 @@ export function AvailabilityEditor({
   const [scheduleCtx, setScheduleCtx] = useState<ScheduleModalContext | null>(
     null,
   );
+  const queryClient = useQueryClient();
 
   const range = useMemo(() => buildWeekRange(weekStart), [weekStart]);
   const days = useMemo(
@@ -82,24 +83,20 @@ export function AvailabilityEditor({
     [weekStart],
   );
 
-  const fetchSlots = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await availabilityApi.myAvailability(
-        formatLocalIso(range.start),
-        formatLocalIso(range.endExclusive),
-      );
-      setSlots(data as SlotDTO[]);
-    } catch {
-      toast.error(t('availability.loadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  }, [range.start, range.endExclusive, t]);
-
+  const fromIso = formatLocalIso(range.start);
+  const toIso = formatLocalIso(range.endExclusive);
+  const slotsQuery = useApiQuery<SlotDTO[]>({
+    queryKey: ['availability', 'mine', fromIso, toIso],
+    url: `/me/availability?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`,
+  });
+  const slots: SlotDTO[] = slotsQuery.data ?? [];
+  const loading = slotsQuery.isLoading;
   useEffect(() => {
-    void fetchSlots();
-  }, [fetchSlots]);
+    if (slotsQuery.isError) toast.error(t('availability.loadFailed'));
+  }, [slotsQuery.isError, t]);
+
+  const fetchSlots = () =>
+    queryClient.invalidateQueries({ queryKey: ['availability', 'mine'] });
 
   const findSlotAt = (
     date: Date,
@@ -129,21 +126,10 @@ export function AvailabilityEditor({
     if (!meetingModalSlot) return;
     setMeetingSaving(true);
     try {
-      const { data } = await availabilityApi.patchMeetingUrl(
-        meetingModalSlot.id,
-        { meetingUrl: meetingDraft.trim() },
-      );
-      const patch = data;
-      setSlots((prev) =>
-        prev.map((s) =>
-          s.id === meetingModalSlot.id
-            ? {
-                ...s,
-                meetingUrl: patch.meetingUrl ?? (meetingDraft.trim() || null),
-              }
-            : s,
-        ),
-      );
+      await availabilityApi.patchMeetingUrl(meetingModalSlot.id, {
+        meetingUrl: meetingDraft.trim(),
+      });
+      await fetchSlots();
       toast.success(t('availability.meetingSaved'));
       setMeetingModalSlot(null);
     } catch (err: unknown) {
@@ -157,17 +143,10 @@ export function AvailabilityEditor({
     if (!meetingModalSlot) return;
     setMeetingSaving(true);
     try {
-      const { data } = await availabilityApi.patchMeetingUrl(
-        meetingModalSlot.id,
-        { meetingUrl: '' },
-      );
-      setSlots((prev) =>
-        prev.map((s) =>
-          s.id === meetingModalSlot.id
-            ? { ...s, meetingUrl: data.meetingUrl ?? null }
-            : s,
-        ),
-      );
+      await availabilityApi.patchMeetingUrl(meetingModalSlot.id, {
+        meetingUrl: '',
+      });
+      await fetchSlots();
       toast.success(t('availability.meetingCleared'));
       setMeetingModalSlot(null);
     } catch (err: unknown) {

@@ -1,13 +1,12 @@
 import React, {
   forwardRef,
-  useCallback,
-  useEffect,
   useImperativeHandle,
   useMemo,
   useState,
 } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@ui';
 
 import { availabilityApi } from '@/shared/api/api-legacy';
@@ -23,6 +22,7 @@ import {
 } from '@/shared/lib/calendar';
 import { classNames } from '@/shared/lib/classNames';
 import { useConfirm } from '@/shared/lib/confirm';
+import { useApiQuery } from '@/shared/lib/query';
 
 interface SlotDTO {
   id: number;
@@ -134,12 +134,11 @@ export const AvailabilityViewer = forwardRef<AvailabilityViewerHandle, Props>(
       d.setHours(0, 0, 0, 0);
       return startOfWeekMonday(d);
     });
-    const [slots, setSlots] = useState<SlotDTO[]>([]);
-    const [loading, setLoading] = useState(false);
     const [bookingId, setBookingId] = useState<number | null>(null);
     const [cancelId, setCancelId] = useState<number | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const confirmDlg = useConfirm();
+    const queryClient = useQueryClient();
 
     useImperativeHandle(ref, () => ({
       openModal: () => {
@@ -161,32 +160,20 @@ export const AvailabilityViewer = forwardRef<AvailabilityViewerHandle, Props>(
 
     const todayKey = dateKeyLocal(new Date());
 
-    const fetchSlots = useCallback(
-      async (opts?: { silent?: boolean }) => {
-        const silent = opts?.silent === true;
-        if (!silent) {
-          setLoading(true);
-          setSlots([]);
-        }
-        try {
-          const { data } = await availabilityApi.forTeacher(
-            teacherId,
-            formatLocalIso(range.start),
-            formatLocalIso(range.endExclusive),
-          );
-          setSlots(Array.isArray(data) ? data : []);
-        } catch {
-          if (!silent) setSlots([]);
-        } finally {
-          if (!silent) setLoading(false);
-        }
-      },
-      [teacherId, range.start, range.endExclusive],
-    );
-
-    useEffect(() => {
-      void fetchSlots();
-    }, [fetchSlots]);
+    const fromIso = formatLocalIso(range.start);
+    const toIso = formatLocalIso(range.endExclusive);
+    const slotsQuery = useApiQuery<SlotDTO[]>({
+      queryKey: ['availability', 'teacher', teacherId, fromIso, toIso],
+      url: `/teachers/${teacherId}/availability?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`,
+    });
+    const slots: SlotDTO[] = Array.isArray(slotsQuery.data)
+      ? slotsQuery.data
+      : [];
+    const loading = slotsQuery.isLoading;
+    const invalidateSlots = () =>
+      queryClient.invalidateQueries({
+        queryKey: ['availability', 'teacher', teacherId],
+      });
 
     const openSlots = useMemo(
       () => slots.filter((s) => s.status === 'OPEN'),
@@ -202,13 +189,7 @@ export const AvailabilityViewer = forwardRef<AvailabilityViewerHandle, Props>(
       try {
         await availabilityApi.bookSlot(teacherId, slot.id);
         toast.success(t('availabilityViewer.bookedToast'));
-        setSlots((prev) =>
-          prev.map((s) =>
-            s.id === slot.id
-              ? { ...s, status: 'BOOKED' as const, bookedByMe: true }
-              : s,
-          ),
-        );
+        await invalidateSlots();
       } catch (err: unknown) {
         toast.error(
           (err as { response?: { data?: { message?: string } } })?.response
@@ -231,13 +212,7 @@ export const AvailabilityViewer = forwardRef<AvailabilityViewerHandle, Props>(
       try {
         await availabilityApi.cancelBooking(slot.id);
         toast.success(t('bookings.cancelledToast'));
-        setSlots((prev) =>
-          prev.map((s) =>
-            s.id === slot.id
-              ? { ...s, status: 'OPEN' as const, bookedByMe: false }
-              : s,
-          ),
-        );
+        await invalidateSlots();
       } catch (err: unknown) {
         toast.error(getApiErrorMessage(err) || t('bookings.cancelFailed'));
       } finally {

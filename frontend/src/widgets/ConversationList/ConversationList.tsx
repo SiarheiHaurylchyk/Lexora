@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Avatar } from '@ui';
 
-import { chatApi } from '@/shared/api/api-legacy';
 import type { ChatConversation } from '@/shared/api/types';
+import { useApiQuery } from '@/shared/lib/query';
 
 const rowBase = tw`flex items-center gap-3 border-b border-border px-4 py-3 no-underline transition-colors duration-200 hover:bg-[rgba(255,255,255,0.04)]`;
 const rowActive = tw`bg-[rgba(124,58,237,0.10)] hover:bg-[rgba(124,58,237,0.15)]`;
@@ -12,23 +13,22 @@ const rowActive = tw`bg-[rgba(124,58,237,0.10)] hover:bg-[rgba(124,58,237,0.15)]
 export function ConversationList() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
-  const [rows, setRows] = useState<ChatConversation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const load = useCallback(async () => {
-    try {
-      const { data } = await chatApi.conversations();
-      setRows(data ?? []);
-    } catch {
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const conversationsQuery = useApiQuery<ChatConversation[]>({
+    queryKey: ['chat', 'conversations'],
+    url: '/chat/conversations',
+  });
+  const rows = conversationsQuery.data ?? [];
+  const loading = conversationsQuery.isLoading;
 
+  // Re-fetch the list when the user switches threads — the unread badge of
+  // the just-opened thread should drop to zero.
   useEffect(() => {
-    void load();
-  }, [load, location.pathname]);
+    void queryClient.invalidateQueries({
+      queryKey: ['chat', 'conversations'],
+    });
+  }, [location.pathname, queryClient]);
 
   const timeFmt = useCallback(
     (iso: string | null) => {

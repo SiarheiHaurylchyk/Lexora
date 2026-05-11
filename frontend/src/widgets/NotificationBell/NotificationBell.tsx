@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { useQueryClient } from '@tanstack/react-query';
 import { Bell, Info, Settings } from 'lucide-react';
 
 import { notificationsApi } from '@/shared/api/api-legacy';
@@ -13,6 +14,7 @@ import {
   notificationMatchesFilter,
   resolveNotificationText,
 } from '@/shared/lib/notificationCopy';
+import { useApiQuery } from '@/shared/lib/query';
 
 const POLL_MS = 30_000;
 
@@ -38,53 +40,37 @@ export function NotificationBell({ placement }: Props) {
   const isHeader = placement === 'header';
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
-  const [items, setItems] = useState<AppNotificationItem[]>([]);
-  const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<NotificationFilter>('ALL');
 
-  const refreshUnread = useCallback(async () => {
-    try {
-      const { data } = await notificationsApi.unreadCount();
-      setUnread(typeof data.count === 'number' ? data.count : 0);
-    } catch {
-      /* offline */
-    }
-  }, []);
+  // Unread badge polls every POLL_MS even when the menu is closed.
+  const unreadQuery = useApiQuery<{ count: number }>({
+    queryKey: ['notifications', 'unread-count'],
+    url: '/me/notifications/unread-count',
+    refetchInterval: POLL_MS,
+    refetchOnWindowFocus: true,
+  });
+  const unread = unreadQuery.data?.count ?? 0;
 
-  const loadList = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await notificationsApi.list();
-      setItems(Array.isArray(data) ? data : []);
-    } catch {
-      toast.error(t('notifications.loadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
+  // Full list is fetched lazily when the dropdown opens.
+  const listQuery = useApiQuery<AppNotificationItem[]>({
+    queryKey: ['notifications', 'list'],
+    url: '/me/notifications',
+    enabled: open,
+  });
+  const items = listQuery.data ?? [];
+  const loading = listQuery.isLoading && open;
   useEffect(() => {
-    void refreshUnread();
-    const id = window.setInterval(() => void refreshUnread(), POLL_MS);
-    return () => window.clearInterval(id);
-  }, [refreshUnread]);
+    if (listQuery.isError) toast.error(t('notifications.loadFailed'));
+  }, [listQuery.isError, t]);
 
-  useEffect(() => {
-    const onVis = () => {
-      if (document.visibilityState === 'visible') void refreshUnread();
-    };
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, [refreshUnread]);
-
-  useEffect(() => {
-    if (open) {
-      void refreshUnread();
-      void loadList();
-    }
-  }, [open, loadList, refreshUnread]);
+  const refreshUnread = () =>
+    queryClient.invalidateQueries({
+      queryKey: ['notifications', 'unread-count'],
+    });
+  const refreshList = () =>
+    queryClient.invalidateQueries({ queryKey: ['notifications', 'list'] });
 
   const filteredItems = useMemo(
     () => items.filter((n) => notificationMatchesFilter(n, filter)),
@@ -97,10 +83,7 @@ export function NotificationBell({ placement }: Props) {
     if (!n.read) {
       try {
         await notificationsApi.markRead(n.id);
-        setItems((prev) =>
-          prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)),
-        );
-        void refreshUnread();
+        await Promise.all([refreshList(), refreshUnread()]);
       } catch {
         toast.error(t('notifications.markReadFailed'));
       }
@@ -114,8 +97,7 @@ export function NotificationBell({ placement }: Props) {
   const markAll = async () => {
     try {
       await notificationsApi.markAllRead();
-      setItems((prev) => prev.map((x) => ({ ...x, read: true })));
-      setUnread(0);
+      await Promise.all([refreshList(), refreshUnread()]);
     } catch {
       toast.error(t('notifications.markAllFailed'));
     }
