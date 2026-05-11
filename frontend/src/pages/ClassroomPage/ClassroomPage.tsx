@@ -218,7 +218,7 @@ export function ClassroomPage() {
   }, [lessonDetailQuery.isError, t]);
 
   const eligibleLessonsQuery = useApiQuery<ClassroomLessonOption[]>({
-    queryKey: ['classrooms', 'eligible-lessons', linkId, ws?.asTeacher],
+    queryKey: ['classrooms', 'eligible-lessons', linkId, ws?.asTeacher ?? null],
     url: `/me/classrooms/${linkId}/eligible-lessons`,
     enabled: Number.isFinite(linkId) && ws != null,
   });
