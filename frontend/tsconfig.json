@@ -2,7 +2,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@ui": ["./src/shared/ui"],
+      "@ui/*": ["./src/shared/ui/*"]
     },
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],

@@ -16,9 +16,13 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
-      alias: {
-        '@': path.resolve(__dirname, './src'),
-      },
+      alias: [
+        { find: '@', replacement: path.resolve(__dirname, './src') },
+        {
+          find: '@ui',
+          replacement: path.resolve(__dirname, './src/shared/ui'),
+        },
+      ],
     },
     server: {
       port: 3000,
