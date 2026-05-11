@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { Button, EmptyState, PageHeader, SectionCard, Skeleton } from '@ui';
 
 import { CreateLessonModal } from '@/features/CreateLesson';
-import { Button, EmptyState, PageHeader, SectionCard, Skeleton } from '@ui';
 
 import type { LessonItem } from '@/shared/api/types';
 import { userCanTeach } from '@/shared/lib/accountRole';

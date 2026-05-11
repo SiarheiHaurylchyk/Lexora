@@ -11,7 +11,11 @@ import {
   type AvailabilityViewerHandle,
 } from '@/widgets/AvailabilityViewer';
 
-import { favoritesApi, studentsApi, teachersApi } from '@/shared/api/api-legacy';
+import {
+  favoritesApi,
+  studentsApi,
+  teachersApi,
+} from '@/shared/api/api-legacy';
 import type { TeacherDetail } from '@/shared/api/types';
 import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
