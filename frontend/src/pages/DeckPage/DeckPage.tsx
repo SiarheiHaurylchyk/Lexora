@@ -5,10 +5,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { ShareDeckModal } from '@/features/ShareDeck';
 
-import { deckApi } from '@/shared/api/api-legacy';
 import type { CardItem, DeckItem } from '@/shared/api/types';
 import { useSpeech } from '@/shared/hooks/useSpeech';
 import { userCanTeach } from '@/shared/lib/accountRole';
+import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 const STUDY_MODES = [
@@ -26,30 +26,23 @@ export function DeckPage() {
   const navigate = useNavigate();
   const user = useAppSelector((s) => s.auth.user);
   const { speak } = useSpeech();
-  const [deck, setDeck] = useState<DeckItem | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchQ, setSearchQ] = useState('');
   const [showShare, setShowShare] = useState(false);
 
+  const deckId = Number(id);
+  const deckQuery = useApiQuery<DeckItem>({
+    queryKey: ['deck', deckId],
+    url: `/decks/${deckId}`,
+    enabled: Number.isFinite(deckId),
+  });
+  const deck = deckQuery.data ?? null;
+  const loading = deckQuery.isLoading;
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await deckApi.getDeck(Number(id));
-        if (!cancelled) setDeck(data);
-      } catch {
-        if (!cancelled) {
-          toast.error(t('deck.notFound'));
-          navigate('/decks');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [id, navigate, t]);
+    if (deckQuery.isError) {
+      toast.error(t('deck.notFound'));
+      navigate('/decks');
+    }
+  }, [deckQuery.isError, navigate, t]);
 
   if (loading)
     return (

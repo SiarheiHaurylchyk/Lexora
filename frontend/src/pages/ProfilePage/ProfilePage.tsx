@@ -1,10 +1,10 @@
-import { type CSSProperties, useEffect, useState } from 'react';
+import { type CSSProperties, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { deckApi, lessonsApi, studyApi } from '@/shared/api/api-legacy';
-import type { DeckItem, LessonItem } from '@/shared/api/types';
+import type { DeckItem, LessonItem, StudySession } from '@/shared/api/types';
+import { useApiQuery } from '@/shared/lib/query';
 import { logout } from '@/shared/lib/storeActions';
 import { useAppDispatch, useAppSelector } from '@/shared/lib/storeHooks';
 
@@ -32,34 +32,31 @@ export function ProfilePage() {
   const user = useAppSelector((s) => s.auth.user);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [history, setHistory] = useState<Any[]>([]);
-  const [learningLessons, setLearningLessons] = useState<LessonItem[]>([]);
-  const [decks, setDecks] = useState<Any[]>([]);
-  const [loading, setLoading] = useState(true);
 
+  const historyQuery = useApiQuery<StudySession[]>({
+    queryKey: ['study', 'history'],
+    url: '/study/history',
+  });
+  const decksQuery = useApiQuery<DeckItem[]>({
+    queryKey: ['decks', 'my'],
+    url: '/decks/my',
+  });
+  const lessonsQuery = useApiQuery<LessonItem[]>({
+    queryKey: ['lessons', 'my-learning'],
+    url: '/lessons/my-learning',
+  });
+
+  const loading =
+    historyQuery.isLoading || decksQuery.isLoading || lessonsQuery.isLoading;
+  const loadFailed =
+    historyQuery.isError || decksQuery.isError || lessonsQuery.isError;
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [historyRes, decksRes, lessonsRes] = await Promise.all([
-          studyApi.getHistory(),
-          deckApi.getMyDecks(),
-          lessonsApi.getMyLearningLessons(),
-        ]);
-        if (cancelled) return;
-        setHistory(historyRes.data || []);
-        setDecks(decksRes.data || []);
-        setLearningLessons(lessonsRes.data || []);
-      } catch {
-        if (!cancelled) toast.error(t('profile.loadFailed'));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [t]);
+    if (loadFailed) toast.error(t('profile.loadFailed'));
+  }, [loadFailed, t]);
+
+  const history = historyQuery.data ?? [];
+  const decks = decksQuery.data ?? [];
+  const learningLessons = lessonsQuery.data ?? [];
 
   const handleLogout = () => {
     dispatch(logout());
@@ -260,7 +257,7 @@ export function ProfilePage() {
           </div>
         ) : (
           <div className='flex flex-col gap-2'>
-            {practiceRuns.map((session: Any) => {
+            {practiceRuns.map((session) => {
               const accuracy = session.accuracy || 0;
               const accuracyStyle: CSSProperties = {
                 color: accuracyColor(accuracy),

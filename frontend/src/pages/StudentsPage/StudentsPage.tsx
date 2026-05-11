@@ -2,17 +2,19 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button, EmptyState, PageHeader, SectionCard, Skeleton } from '@ui';
 
 import { AddStudentModal } from '@/features/AddStudent';
 
 import { PersonRow } from '@/entities/User';
 
-import { studentsApi, teacherSummaryApi } from '@/shared/api/api-legacy';
+import { studentsApi } from '@/shared/api/api-legacy';
 import type { StudentLink, TeacherSummaryPayload } from '@/shared/api/types';
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { useConfirm } from '@/shared/lib/confirm';
+import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 /**
@@ -28,45 +30,37 @@ export function StudentsPage() {
   const navigate = useNavigate();
   const me = useAppSelector((s) => s.auth.user);
   const canTeach = userCanTeach(me?.role);
-  const [students, setStudents] = useState<StudentLink[]>([]);
-  const [teachers, setTeachers] = useState<StudentLink[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [summary, setSummary] = useState<TeacherSummaryPayload | null>(null);
   const [notesDraft, setNotesDraft] = useState<Record<number, string>>({});
   const [savingNotesFor, setSavingNotesFor] = useState<number | null>(null);
 
+  const teachersQuery = useApiQuery<StudentLink[]>({
+    queryKey: ['students', 'my-teachers'],
+    url: '/students/my-teachers',
+  });
+  const studentsQuery = useApiQuery<StudentLink[]>({
+    queryKey: ['students', 'my-students'],
+    url: '/students/my-students',
+    enabled: canTeach,
+  });
+  const summaryQuery = useApiQuery<TeacherSummaryPayload>({
+    queryKey: ['teacher', 'summary'],
+    url: '/me/teacher-summary',
+    enabled: canTeach,
+  });
+
+  const teachers = teachersQuery.data ?? [];
+  const students = studentsQuery.data ?? [];
+  const summary = summaryQuery.data ?? null;
+  const loading =
+    teachersQuery.isLoading ||
+    (canTeach && (studentsQuery.isLoading || summaryQuery.isLoading));
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const mine = await studentsApi.getMyTeachers();
-        if (cancelled) return;
-        setTeachers(mine.data);
-        if (canTeach) {
-          const my = await studentsApi.getMyStudents();
-          if (cancelled) return;
-          setStudents(my.data);
-          try {
-            const s = await teacherSummaryApi.get();
-            if (!cancelled) setSummary(s.data);
-          } catch {
-            if (!cancelled) setSummary(null);
-          }
-        } else {
-          setStudents([]);
-          setSummary(null);
-        }
-      } catch {
-        if (!cancelled) toast.error(t('students.loadFailed'));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [t, canTeach]);
+    // Only the primary lists trigger a toast; summary is best-effort.
+    if (teachersQuery.isError || studentsQuery.isError) {
+      toast.error(t('students.loadFailed'));
+    }
+  }, [teachersQuery.isError, studentsQuery.isError, t]);
 
   useEffect(() => {
     const next: Record<number, string> = {};
@@ -76,8 +70,12 @@ export function StudentsPage() {
     setNotesDraft(next);
   }, [students]);
 
-  const handleAdded = (link: StudentLink) => {
-    setStudents((prev) => [link, ...prev]);
+  const queryClient = useQueryClient();
+  const invalidateStudents = () =>
+    queryClient.invalidateQueries({ queryKey: ['students', 'my-students'] });
+
+  const handleAdded = () => {
+    void invalidateStudents();
   };
 
   const handleRemove = async (link: StudentLink) => {
@@ -90,7 +88,7 @@ export function StudentsPage() {
     if (!ok) return;
     try {
       await studentsApi.removeStudent(link.linkId);
-      setStudents((prev) => prev.filter((x) => x.linkId !== link.linkId));
+      await invalidateStudents();
       toast.success(t('students.removedToast', { name }));
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('students.removeFailed'));
@@ -101,16 +99,10 @@ export function StudentsPage() {
     const text = notesDraft[linkId] ?? '';
     setSavingNotesFor(linkId);
     try {
-      const { data } = await studentsApi.patchMyStudentNotes(linkId, {
+      await studentsApi.patchMyStudentNotes(linkId, {
         privateNotes: text,
       });
-      setStudents((prev) =>
-        prev.map((row) =>
-          row.linkId === linkId
-            ? { ...row, privateNotes: data.privateNotes }
-            : row,
-        ),
-      );
+      await invalidateStudents();
       toast.success(t('students.notesSaved'));
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('students.notesFailed'));

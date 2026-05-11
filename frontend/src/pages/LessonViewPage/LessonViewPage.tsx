@@ -6,9 +6,9 @@ import { Button, Skeleton } from '@ui';
 
 import { LessonBlockView } from '@/entities/LessonBlock';
 
-import { lessonsApi } from '@/shared/api/api-legacy';
 import type { LessonItem } from '@/shared/api/types';
 import { lessonSectionsSorted } from '@/shared/lib/lessonSections';
+import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 const wideShellClasses = tw`box-border w-full pt-10 pb-12`;
@@ -29,29 +29,22 @@ export function LessonViewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const me = useAppSelector((s) => s.auth.user);
-  const [lesson, setLesson] = useState<LessonItem | null>(null);
-  const [loading, setLoading] = useState(true);
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null);
 
+  const lessonId = Number(id);
+  const lessonQuery = useApiQuery<LessonItem>({
+    queryKey: ['lesson', lessonId],
+    url: `/lessons/${lessonId}`,
+    enabled: Number.isFinite(lessonId),
+  });
+  const lesson = lessonQuery.data ?? null;
+  const loading = lessonQuery.isLoading;
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await lessonsApi.getLesson(Number(id));
-        if (!cancelled) setLesson(data);
-      } catch {
-        if (!cancelled) {
-          toast.error(t('lessons.notFound'));
-          navigate('/lessons');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [id, navigate, t]);
+    if (lessonQuery.isError) {
+      toast.error(t('lessons.notFound'));
+      navigate('/lessons');
+    }
+  }, [lessonQuery.isError, navigate, t]);
 
   const sections = useMemo(() => lessonSectionsSorted(lesson), [lesson]);
 

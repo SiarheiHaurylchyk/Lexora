@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@ui';
 import {
   BookOpen,
@@ -18,8 +19,8 @@ import { CreateDeckModal } from '@/features/CreateDeck';
 
 import { DeckCard } from '@/entities/Deck';
 
-import { deckApi } from '@/shared/api/api-legacy';
 import type { DeckItem } from '@/shared/api/types';
+import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 const STAT_COLORS = [
@@ -41,10 +42,9 @@ export function MyDecksPage() {
   const user = useAppSelector((s) => s.auth.user);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [decks, setDecks] = useState<Any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [searchQ, setSearchQ] = useState('');
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (searchParams.get('new') === '1') {
@@ -53,21 +53,18 @@ export function MyDecksPage() {
     }
   }, [searchParams, setSearchParams]);
 
-  const fetchDecks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await deckApi.getMyDecks();
-      setDecks(data);
-    } catch {
-      toast.error(t('dashboard.loadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
+  const decksQuery = useApiQuery<DeckItem[]>({
+    queryKey: ['decks', 'my'],
+    url: '/decks/my',
+  });
+  const decks = decksQuery.data ?? [];
+  const loading = decksQuery.isLoading;
   useEffect(() => {
-    void fetchDecks();
-  }, [fetchDecks]);
+    if (decksQuery.isError) toast.error(t('dashboard.loadFailed'));
+  }, [decksQuery.isError, t]);
+
+  const refetchDecks = () =>
+    queryClient.invalidateQueries({ queryKey: ['decks', 'my'] });
 
   const filtered = decks.filter((d) => {
     const q = searchQ.toLowerCase();
@@ -211,7 +208,7 @@ export function MyDecksPage() {
       ) : (
         <div className={gridClasses}>
           {filtered.map((deck) => (
-            <DeckCard key={deck.id} deck={deck} onDeleted={fetchDecks} />
+            <DeckCard key={deck.id} deck={deck} onDeleted={refetchDecks} />
           ))}
         </div>
       )}

@@ -1,1 +1,5 @@
-export { useApiMutation, useApiQuery } from './useApiQuery';
+export {
+  useApiInfiniteQuery,
+  useApiMutation,
+  useApiQuery,
+} from './useApiQuery';

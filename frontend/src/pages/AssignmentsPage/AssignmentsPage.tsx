@@ -2,12 +2,19 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button, EmptyState, PageHeader, SectionCard, Skeleton } from '@ui';
 
-import { assignmentsApi, deckApi, studentsApi } from '@/shared/api/api-legacy';
-import type { StudentAssignmentItem, StudentLink } from '@/shared/api/types';
+import { assignmentsApi } from '@/shared/api/api-legacy';
+import type {
+  AssignmentsViewPayload,
+  DeckItem,
+  StudentAssignmentItem,
+  StudentLink,
+} from '@/shared/api/types';
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 const labelClasses = tw`mb-1.5 block text-[13px]`;
@@ -17,12 +24,42 @@ export function AssignmentsPage() {
   const { t, i18n } = useTranslation();
   const me = useAppSelector((s) => s.auth.user);
   const canTeach = userCanTeach(me?.role);
+  const queryClient = useQueryClient();
 
-  const [received, setReceived] = useState<StudentAssignmentItem[]>([]);
-  const [sent, setSent] = useState<StudentAssignmentItem[]>([]);
-  const [students, setStudents] = useState<StudentLink[]>([]);
-  const [decks, setDecks] = useState<{ id: number; title: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const assignmentsQuery = useApiQuery<AssignmentsViewPayload>({
+    queryKey: ['assignments', 'mine'],
+    url: '/me/assignments',
+  });
+  const studentsQuery = useApiQuery<StudentLink[]>({
+    queryKey: ['students', 'my-students'],
+    url: '/students/my-students',
+    enabled: canTeach,
+  });
+  const decksQuery = useApiQuery<DeckItem[]>({
+    queryKey: ['decks', 'my'],
+    url: '/decks/my',
+    enabled: canTeach,
+  });
+
+  const received = assignmentsQuery.data?.received ?? [];
+  const sent = assignmentsQuery.data?.sent ?? [];
+  const students = studentsQuery.data ?? [];
+  const decks = (decksQuery.data ?? []).map((d) => ({
+    id: d.id,
+    title: d.title,
+  }));
+  const loading =
+    assignmentsQuery.isLoading ||
+    (canTeach && (studentsQuery.isLoading || decksQuery.isLoading));
+  const loadFailed =
+    assignmentsQuery.isError || studentsQuery.isError || decksQuery.isError;
+  useEffect(() => {
+    if (loadFailed) toast.error(t('assignments.loadFailed'));
+  }, [loadFailed, t]);
+
+  const reload = () =>
+    queryClient.invalidateQueries({ queryKey: ['assignments', 'mine'] });
+
   const [creating, setCreating] = useState(false);
   const [completeId, setCompleteId] = useState<number | null>(null);
 
@@ -38,41 +75,6 @@ export function AssignmentsPage() {
     {},
   );
   const [savingResponseId, setSavingResponseId] = useState<number | null>(null);
-
-  const reload = async () => {
-    const { data } = await assignmentsApi.list();
-    setReceived(data.received ?? []);
-    setSent(data.sent ?? []);
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await assignmentsApi.list();
-        if (cancelled) return;
-        setReceived(data.received ?? []);
-        setSent(data.sent ?? []);
-        if (canTeach) {
-          const [st, dk] = await Promise.all([
-            studentsApi.getMyStudents(),
-            deckApi.getMyDecks(),
-          ]);
-          if (!cancelled) {
-            setStudents(st.data);
-            setDecks(dk.data.map((d) => ({ id: d.id, title: d.title })));
-          }
-        }
-      } catch {
-        if (!cancelled) toast.error(t('assignments.loadFailed'));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [t, canTeach]);
 
   useEffect(() => {
     const d: Record<number, string> = {};

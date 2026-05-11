@@ -1,11 +1,11 @@
-import { type CSSProperties, useEffect, useState } from 'react';
+import { type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CalendarClock, GraduationCap, Layers } from 'lucide-react';
 
-import { bookingsApi } from '@/shared/api/api-legacy';
 import type { NextBookingPayload } from '@/shared/api/types';
 import { userCanTeach } from '@/shared/lib/accountRole';
+import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 const choiceCardClasses = tw`block overflow-hidden rounded-[18px] border border-border bg-surface text-inherit cursor-pointer transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(0,0,0,0.22)] hover:border-[rgba(124,58,237,0.35)] no-underline`;
@@ -22,24 +22,11 @@ export function HomeHubPage() {
   const { t } = useTranslation();
   const user = useAppSelector((s) => s.auth.user);
   const canTeach = userCanTeach(user?.role);
-  const [nextBooking, setNextBooking] = useState<NextBookingPayload | null>(
-    null,
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await bookingsApi.nextBooking();
-        if (!cancelled) setNextBooking(data);
-      } catch {
-        if (!cancelled) setNextBooking(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const nextBookingQuery = useApiQuery<NextBookingPayload>({
+    queryKey: ['bookings', 'next'],
+    url: '/me/next-booking',
+  });
+  const nextBooking = nextBookingQuery.data ?? null;
 
   const nextBookingWhen =
     nextBooking?.hasBooking && nextBooking.startTime && nextBooking.endTime

@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Button, EmptyState, PageHeader, SectionCard, Skeleton } from '@ui';
 
 import { CreateLessonModal } from '@/features/CreateLesson';
+import { Button, EmptyState, PageHeader, SectionCard, Skeleton } from '@ui';
 
-import { lessonsApi } from '@/shared/api/api-legacy';
 import type { LessonItem } from '@/shared/api/types';
 import { userCanTeach } from '@/shared/lib/accountRole';
+import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 const wideShellClasses = tw`box-border w-full pt-10 pb-12`;
@@ -23,35 +23,25 @@ export function LessonsPage() {
   const navigate = useNavigate();
   const me = useAppSelector((s) => s.auth.user);
   const canTeach = userCanTeach(me?.role);
-  const [teaching, setTeaching] = useState<LessonItem[]>([]);
-  const [learning, setLearning] = useState<LessonItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
 
+  const learningQuery = useApiQuery<LessonItem[]>({
+    queryKey: ['lessons', 'my-learning'],
+    url: '/lessons/my-learning',
+  });
+  const teachingQuery = useApiQuery<LessonItem[]>({
+    queryKey: ['lessons', 'my-teaching'],
+    url: '/lessons/my-teaching',
+    enabled: canTeach,
+  });
+  const learning = learningQuery.data ?? [];
+  const teaching = teachingQuery.data ?? [];
+  const loading =
+    learningQuery.isLoading || (canTeach && teachingQuery.isLoading);
+  const loadFailed = learningQuery.isError || teachingQuery.isError;
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const learningRes = await lessonsApi.getMyLearningLessons();
-        if (cancelled) return;
-        setLearning(learningRes.data);
-        if (canTeach) {
-          const teachingRes = await lessonsApi.getMyTeachingLessons();
-          if (cancelled) return;
-          setTeaching(teachingRes.data);
-        } else {
-          setTeaching([]);
-        }
-      } catch {
-        if (!cancelled) toast.error(t('lessons.loadFailed'));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [t, canTeach]);
+    if (loadFailed) toast.error(t('lessons.loadFailed'));
+  }, [loadFailed, t]);
 
   const locale = i18n.language.startsWith('ru') ? 'ru-RU' : 'en-US';
   const formatDate = (date?: string) =>

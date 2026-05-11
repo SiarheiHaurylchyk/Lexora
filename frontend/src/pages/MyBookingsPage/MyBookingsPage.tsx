@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button, EmptyState, PageHeader, SectionCard, Skeleton } from '@ui';
 
-import { availabilityApi, bookingsApi } from '@/shared/api/api-legacy';
+import { availabilityApi } from '@/shared/api/api-legacy';
 import type { TeacherSlotItem } from '@/shared/api/types';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { canLearnerCancelBooking } from '@/shared/lib/bookingRules';
 import { useConfirm } from '@/shared/lib/confirm';
+import { useApiQuery } from '@/shared/lib/query';
 
 /**
  * Learner view: booked time slots with teachers (from availability calendar).
@@ -17,31 +19,21 @@ export function MyBookingsPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const confirmDlg = useConfirm();
-  const [slots, setSlots] = useState<TeacherSlotItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [cancellingId, setCancellingId] = useState<number | null>(null);
 
-  const reload = async () => {
-    const { data } = await bookingsApi.myBookedSlots();
-    setSlots(data);
-  };
-
+  const slotsQuery = useApiQuery<TeacherSlotItem[]>({
+    queryKey: ['bookings', 'mine'],
+    url: '/me/booked-slots',
+  });
+  const slots = slotsQuery.data ?? [];
+  const loading = slotsQuery.isLoading;
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await bookingsApi.myBookedSlots();
-        if (!cancelled) setSlots(data);
-      } catch {
-        if (!cancelled) toast.error(t('bookings.loadFailed'));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [t]);
+    if (slotsQuery.isError) toast.error(t('bookings.loadFailed'));
+  }, [slotsQuery.isError, t]);
+
+  const reload = () =>
+    queryClient.invalidateQueries({ queryKey: ['bookings', 'mine'] });
 
   const formatRange = (startIso: string, endIso: string) => {
     const start = new Date(startIso);

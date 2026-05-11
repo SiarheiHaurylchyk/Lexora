@@ -1,67 +1,79 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { DeckCard } from '@/entities/Deck';
 
-import { deckApi } from '@/shared/api/api-legacy';
+import type { DeckItem, Paged } from '@/shared/api/types';
+import { useApiInfiniteQuery, useApiQuery } from '@/shared/lib/query';
 
 const LANG_CODES = ['', 'en', 'ru', 'de', 'fr', 'es'] as const;
+const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 400;
 
 const gridClasses = tw`grid gap-5 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]`;
+
+type PagedDecks = Paged<DeckItem> | DeckItem[];
+
+/** Backend returns either an array or { content: [...] } depending on endpoint. */
+function unwrap(page: PagedDecks): DeckItem[] {
+  return Array.isArray(page) ? page : (page.content ?? []);
+}
 
 export function ExplorePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [decks, setDecks] = useState<Any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQ, setSearchQ] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [selectedLang, setSelectedLang] = useState('');
 
-  const loadPublicPage = useCallback(
-    async (targetPage: number, reset: boolean) => {
-      if (reset) setLoading(true);
-      try {
-        const { data } = await deckApi.getPublicDecks(targetPage);
-        const items = data.content || data;
-        setDecks((prev) => (reset ? items : [...prev, ...items]));
-        setHasMore(items.length === 20);
-      } catch {
-        toast.error(t('explore.loadFailed'));
-      } finally {
-        setLoading(false);
-      }
+  // Debounce the search input so we don't spam the API on every keystroke.
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setDebouncedQ(searchQ.trim()),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [searchQ]);
+
+  const searchEnabled = debouncedQ.length > 0;
+
+  const searchQuery = useApiQuery<PagedDecks>({
+    queryKey: ['decks', 'search', debouncedQ],
+    url: `/decks/search?q=${encodeURIComponent(debouncedQ)}`,
+    enabled: searchEnabled,
+  });
+
+  const publicInfinite = useApiInfiniteQuery<PagedDecks>({
+    queryKey: ['decks', 'public'],
+    url: (page) => `/decks/public?page=${page}`,
+    getNextPageParam: (last, all) => {
+      const items = unwrap(last);
+      return items.length < PAGE_SIZE ? undefined : all.length;
     },
-    [t],
-  );
+    enabled: !searchEnabled,
+  });
+
+  const decks: DeckItem[] = useMemo(() => {
+    if (searchEnabled) return unwrap(searchQuery.data ?? []);
+    return (publicInfinite.data?.pages ?? []).flatMap(unwrap);
+  }, [searchEnabled, searchQuery.data, publicInfinite.data]);
+
+  const loading = searchEnabled
+    ? searchQuery.isLoading
+    : publicInfinite.isLoading;
+  const searching =
+    searchEnabled && (searchQuery.isLoading || searchQ.trim() !== debouncedQ);
+  const hasMore = !searchEnabled && (publicInfinite.hasNextPage ?? false);
+  const isError = searchEnabled ? searchQuery.isError : publicInfinite.isError;
 
   useEffect(() => {
-    const q = searchQ.trim();
-    if (!q) {
-      setPage(0);
-      loadPublicPage(0, true);
-      return;
-    }
-
-    setSearching(true);
-    const timer = setTimeout(async () => {
-      try {
-        const { data } = await deckApi.search(q);
-        setDecks(data.content || data);
-        setHasMore(false);
-      } catch {
-        toast.error(t('explore.searchFailed'));
-      } finally {
-        setSearching(false);
-        setLoading(false);
-      }
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [searchQ, loadPublicPage, t]);
+    if (isError)
+      toast.error(
+        t(searchEnabled ? 'explore.searchFailed' : 'explore.loadFailed'),
+      );
+  }, [isError, searchEnabled, t]);
 
   const filtered = selectedLang
     ? decks.filter(
@@ -74,11 +86,7 @@ export function ExplorePage() {
   const langLabel = (code: string) =>
     code ? t(`languages.${code}`) : t('explore.allLangs');
 
-  const loadMore = () => {
-    const next = page + 1;
-    setPage(next);
-    loadPublicPage(next, false);
-  };
+  const loadMore = () => publicInfinite.fetchNextPage();
 
   return (
     <div className='box-border w-full py-10'>
@@ -126,7 +134,9 @@ export function ExplorePage() {
         <p className='text-text3 mb-5 text-sm'>
           {t('explore.found', {
             count: filtered.length,
-            forQuery: searchQ ? t('explore.forQuery', { q: searchQ }) : '',
+            forQuery: debouncedQ
+              ? t('explore.forQuery', { q: debouncedQ })
+              : '',
           })}
         </p>
       )}
@@ -141,10 +151,10 @@ export function ExplorePage() {
         <div className='px-6 py-20 text-center'>
           <div className='mb-4 text-[56px]'>🌐</div>
           <h2 className='font-display mb-3 text-[22px]'>
-            {searchQ ? t('explore.noResults') : t('explore.noPublic')}
+            {debouncedQ ? t('explore.noResults') : t('explore.noPublic')}
           </h2>
           <p className='text-text2 mb-6'>
-            {searchQ ? t('explore.tryOther') : t('explore.beFirst')}
+            {debouncedQ ? t('explore.tryOther') : t('explore.beFirst')}
           </p>
           <button
             type='button'
@@ -162,15 +172,17 @@ export function ExplorePage() {
             ))}
           </div>
 
-          {hasMore && !searchQ && (
+          {hasMore && (
             <div className='mt-8 text-center'>
               <button
                 type='button'
                 className='btn btn-secondary btn-lg'
                 onClick={loadMore}
-                disabled={loading}
+                disabled={publicInfinite.isFetchingNextPage}
               >
-                {loading ? t('common.loading') : t('explore.loadMore')}
+                {publicInfinite.isFetchingNextPage
+                  ? t('common.loading')
+                  : t('explore.loadMore')}
               </button>
             </div>
           )}

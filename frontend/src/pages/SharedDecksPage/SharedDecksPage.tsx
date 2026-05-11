@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { EmptyState, PageHeader, Skeleton } from '@ui';
 
 import { DeckCard } from '@/entities/Deck';
 
-import { deckApi } from '@/shared/api/api-legacy';
 import type { DeckItem } from '@/shared/api/types';
+import { useApiQuery } from '@/shared/lib/query';
 
 /**
  * SharedDecksPage — list of decks that other users (usually a teacher)
@@ -14,25 +14,16 @@ import type { DeckItem } from '@/shared/api/types';
  */
 export function SharedDecksPage() {
   const { t } = useTranslation();
-  const [decks, setDecks] = useState<DeckItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
+  const decksQuery = useApiQuery<DeckItem[]>({
+    queryKey: ['decks', 'shared'],
+    url: '/decks/shared',
+  });
+  const decks = decksQuery.data ?? [];
+  const loading = decksQuery.isLoading;
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await deckApi.getSharedDecks();
-        if (!cancelled) setDecks(data);
-      } catch {
-        if (!cancelled) toast.error(t('shared.loadFailed'));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [t]);
+    if (decksQuery.isError) toast.error(t('shared.loadFailed'));
+  }, [decksQuery.isError, t]);
 
   return (
     <div className='box-border w-full py-10'>

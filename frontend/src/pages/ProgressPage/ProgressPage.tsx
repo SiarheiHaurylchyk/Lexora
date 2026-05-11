@@ -1,7 +1,7 @@
-import { type CSSProperties, useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { progressApi } from '@/shared/api/api-legacy';
+import { useApiQuery } from '@/shared/lib/query';
 
 interface HeatmapDay {
   date: string;
@@ -41,24 +41,12 @@ const LEVEL_COLORS = [
  */
 export function ProgressPage() {
   const { t, i18n } = useTranslation();
-  const [data, setData] = useState<ProgressDTO | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    progressApi
-      .get()
-      .then(({ data }) => {
-        if (alive) setData(data as ProgressDTO);
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
+  const progressQuery = useApiQuery<ProgressDTO>({
+    queryKey: ['study', 'progress'],
+    url: '/study/progress',
+  });
+  const data = progressQuery.data ?? null;
+  const loading = progressQuery.isLoading;
 
   const heatmapWeeks = useMemo(() => buildWeeks(data?.heatmap || []), [data]);
   const monthLabels = useMemo(

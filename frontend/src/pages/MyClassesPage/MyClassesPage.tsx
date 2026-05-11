@@ -6,9 +6,9 @@ import { Search } from 'lucide-react';
 
 import { ClassCard } from '@/entities/Classroom';
 
-import { studentsApi } from '@/shared/api/api-legacy';
 import type { StudentLink } from '@/shared/api/types';
 import { userCanTeach } from '@/shared/lib/accountRole';
+import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 const gridClasses = tw`grid gap-[22px] grid-cols-3 max-[1100px]:grid-cols-2 max-[640px]:grid-cols-1`;
@@ -32,8 +32,6 @@ export function MyClassesPage() {
   const { t } = useTranslation();
   const me = useAppSelector((s) => s.auth.user);
   const canTeach = userCanTeach(me?.role);
-  const [items, setItems] = useState<StudentLink[]>([]);
-  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [qDebounced, setQDebounced] = useState('');
 
@@ -42,31 +40,15 @@ export function MyClassesPage() {
     return () => window.clearTimeout(id);
   }, [q]);
 
+  const itemsQuery = useApiQuery<StudentLink[]>({
+    queryKey: ['classes', canTeach ? 'students' : 'teachers'],
+    url: canTeach ? '/students/my-students' : '/students/my-teachers',
+  });
+  const items = itemsQuery.data ?? [];
+  const loading = itemsQuery.isLoading;
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        if (canTeach) {
-          const { data } = await studentsApi.getMyStudents();
-          if (!cancelled) setItems(data);
-        } else {
-          const { data } = await studentsApi.getMyTeachers();
-          if (!cancelled) setItems(data);
-        }
-      } catch {
-        if (!cancelled) {
-          toast.error(t('classes.loadFailed'));
-          setItems([]);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [canTeach, t]);
+    if (itemsQuery.isError) toast.error(t('classes.loadFailed'));
+  }, [itemsQuery.isError, t]);
 
   const filtered = useMemo(
     () => items.filter((row) => matchesQuery(row, qDebounced)),

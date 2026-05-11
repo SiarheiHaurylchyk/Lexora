@@ -5,6 +5,9 @@
  * `react-hooks/set-state-in-effect` lint rule).
  */
 import {
+  type InfiniteData,
+  useInfiniteQuery,
+  type UseInfiniteQueryOptions,
   useMutation,
   type UseMutationOptions,
   useQuery,
@@ -94,6 +97,57 @@ export function useApiMutation<TData, TVariables = void>({
           : await $api[method]<TData>(target, payload);
       return res.data;
     },
+    ...rest,
+  });
+}
+
+interface ApiInfiniteQueryOptions<TPage> extends Omit<
+  UseInfiniteQueryOptions<TPage, Error, InfiniteData<TPage>, QueryKey, number>,
+  'queryKey' | 'queryFn' | 'initialPageParam' | 'getNextPageParam'
+> {
+  /** Stable cache key. */
+  queryKey: QueryKey;
+  /** Endpoint URL — receives the current page index (0-based by default). */
+  url: (pageParam: number) => string;
+  /** First page index (default 0). */
+  initialPageParam?: number;
+  /** Decide whether more pages exist. Receives the last page and all pages. */
+  getNextPageParam: (
+    lastPage: TPage,
+    allPages: TPage[],
+    lastPageParam: number,
+  ) => number | undefined;
+  /** Optional axios config. */
+  config?: AxiosRequestConfig;
+}
+
+/**
+ * Paginated GET helper for endpoints with classic "?page=N" pagination.
+ *
+ * @example
+ *   const decksInfinite = useApiInfiniteQuery<Page<Deck>>({
+ *     queryKey: ['public-decks'],
+ *     url: (page) => `/decks/public?page=${page}`,
+ *     getNextPageParam: (last, all) =>
+ *       last.content.length < 20 ? undefined : all.length,
+ *   });
+ */
+export function useApiInfiniteQuery<TPage>({
+  queryKey,
+  url,
+  initialPageParam = 0,
+  getNextPageParam,
+  config,
+  ...rest
+}: ApiInfiniteQueryOptions<TPage>) {
+  return useInfiniteQuery<TPage, Error, InfiniteData<TPage>, QueryKey, number>({
+    queryKey,
+    queryFn: async ({ pageParam }) => {
+      const res = await $api.get<TPage>(url(pageParam), config);
+      return res.data;
+    },
+    initialPageParam,
+    getNextPageParam,
     ...rest,
   });
 }

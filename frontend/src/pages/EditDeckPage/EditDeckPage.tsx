@@ -8,6 +8,7 @@ import { CardImagePicker } from '@/features/CardImagePicker';
 import { deckApi } from '@/shared/api/api-legacy';
 import type { CardItem, DeckItem } from '@/shared/api/types';
 import { useSpeech } from '@/shared/hooks/useSpeech';
+import { useApiQuery } from '@/shared/lib/query';
 
 const COLORS = [
   '#7C3AED',
@@ -91,7 +92,14 @@ export function EditDeckPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { speak } = useSpeech();
-  const [, setDeck] = useState<DeckItem | null>(null);
+  const deckId = Number(id);
+
+  const deckQuery = useApiQuery<DeckItem>({
+    queryKey: ['deck', deckId],
+    url: `/decks/${deckId}`,
+    enabled: Number.isFinite(deckId),
+  });
+
   const [meta, setMeta] = useState({
     title: '',
     description: '',
@@ -103,53 +111,45 @@ export function EditDeckPage() {
   });
   const [cards, setCards] = useState<CardForm[]>([]);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [activeCard, setActiveCard] = useState<number | null>(null);
   const [bulkText, setBulkText] = useState('');
   const [showBulk, setShowBulk] = useState(false);
 
   const langName = useCallback((code: string) => t(`languages.${code}`), [t]);
+  const loading = deckQuery.isLoading;
+
+  // Initialize the editable form whenever fresh server data arrives.
+  useEffect(() => {
+    const data = deckQuery.data;
+    if (!data) return;
+    setMeta({
+      title: data.title,
+      description: data.description || '',
+      sourceLanguage: data.sourceLanguage,
+      targetLanguage: data.targetLanguage,
+      coverColor: data.coverColor || '#7C3AED',
+      emoji: data.emoji || '📚',
+      visibility: data.visibility,
+    });
+    setCards(
+      (data.cards || []).map((c: CardItem) => ({
+        id: c.id,
+        term: c.term,
+        definition: c.definition,
+        example: c.example || '',
+        transcription: c.transcription || '',
+        termImageUrl: c.termImageUrl || '',
+        definitionImageUrl: c.definitionImageUrl || '',
+      })),
+    );
+  }, [deckQuery.data]);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await deckApi.getDeck(Number(id));
-        if (cancelled) return;
-        setDeck(data);
-        setMeta({
-          title: data.title,
-          description: data.description || '',
-          sourceLanguage: data.sourceLanguage,
-          targetLanguage: data.targetLanguage,
-          coverColor: data.coverColor || '#7C3AED',
-          emoji: data.emoji || '📚',
-          visibility: data.visibility,
-        });
-        setCards(
-          (data.cards || []).map((c: CardItem) => ({
-            id: c.id,
-            term: c.term,
-            definition: c.definition,
-            example: c.example || '',
-            transcription: c.transcription || '',
-            termImageUrl: c.termImageUrl || '',
-            definitionImageUrl: c.definitionImageUrl || '',
-          })),
-        );
-      } catch {
-        if (!cancelled) {
-          toast.error(t('editDeck.notFound'));
-          navigate('/decks');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [id, navigate, t]);
+    if (deckQuery.isError) {
+      toast.error(t('editDeck.notFound'));
+      navigate('/decks');
+    }
+  }, [deckQuery.isError, navigate, t]);
 
   const saveMeta = async () => {
     setSaving(true);

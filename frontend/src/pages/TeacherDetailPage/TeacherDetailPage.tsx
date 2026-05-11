@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@ui';
 import { Heart } from 'lucide-react';
 
@@ -10,12 +11,9 @@ import {
   type AvailabilityViewerHandle,
 } from '@/widgets/AvailabilityViewer';
 
-import {
-  favoritesApi,
-  studentsApi,
-  teachersApi,
-} from '@/shared/api/api-legacy';
+import { favoritesApi, studentsApi, teachersApi } from '@/shared/api/api-legacy';
 import type { TeacherDetail } from '@/shared/api/types';
+import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 import { getYouTubeEmbedUrl } from '@/shared/lib/youtube';
 
@@ -44,8 +42,7 @@ export function TeacherDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAppSelector((s) => s.auth);
-  const [teacher, setTeacher] = useState<TeacherDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [profileTab, setProfileTab] = useState<ProfileTab>('about');
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
@@ -54,30 +51,25 @@ export function TeacherDetailPage() {
   const availabilityAnchorRef = useRef<HTMLDivElement>(null);
   const availabilityViewerRef = useRef<AvailabilityViewerHandle>(null);
 
-  const reloadTeacher = async () => {
-    const { data } = await teachersApi.getTeacher(Number(id));
-    setTeacher(normalizeTeacherDetail(data));
-  };
+  const teacherId = Number(id);
+  const teacherQuery = useApiQuery<TeacherDetail>({
+    queryKey: ['teacher', teacherId],
+    url: `/teachers/${teacherId}`,
+    enabled: Number.isFinite(teacherId),
+    select: (data) => normalizeTeacherDetail(data),
+  });
+  const teacher = teacherQuery.data ?? null;
+  const loading = teacherQuery.isLoading;
+
+  const reloadTeacher = () =>
+    queryClient.invalidateQueries({ queryKey: ['teacher', teacherId] });
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await teachersApi.getTeacher(Number(id));
-        if (!cancelled) setTeacher(normalizeTeacherDetail(data));
-      } catch {
-        if (!cancelled) {
-          toast.error(t('teachers.detail.notFound'));
-          navigate('/teachers');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [id, navigate, t]);
+    if (teacherQuery.isError) {
+      toast.error(t('teachers.detail.notFound'));
+      navigate('/teachers');
+    }
+  }, [teacherQuery.isError, navigate, t]);
 
   useEffect(() => {
     if (!teacher) return;

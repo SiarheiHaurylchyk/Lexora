@@ -77,6 +77,20 @@ export interface MaterialsPersonalViewDTO {
   savedFromCatalog: DeckItem[];
 }
 
+/** One row in /study/history — past study session summary. */
+export interface StudySession {
+  id: number;
+  deckId: number;
+  deckTitle: string;
+  mode: string;
+  accuracy: number;
+  totalCards: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  startedAt?: string;
+  completedAt?: string;
+}
+
 /** One row in "my students" or "my teachers" list. */
 export interface StudentLink {
   linkId: number;
