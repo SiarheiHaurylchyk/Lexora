@@ -9,7 +9,7 @@ import { CreateLessonModal } from '@/features/CreateLesson';
 import type { LessonItem } from '@/shared/api/types';
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const wideShellClasses = tw`box-border w-full pt-10 pb-12`;
 
@@ -21,7 +21,7 @@ const wideShellClasses = tw`box-border w-full pt-10 pb-12`;
 export function LessonsPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const me = useAppSelector((s) => s.auth.user);
+  const me = useAuthStore((s) => s.user);
   const canTeach = userCanTeach(me?.role);
   const [showCreate, setShowCreate] = useState(false);
 

@@ -21,7 +21,7 @@ import { DeckCard } from '@/entities/Deck';
 
 import type { DeckItem } from '@/shared/api/types';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const STAT_COLORS = [
   'var(--brand)',
@@ -39,7 +39,7 @@ const gridClasses = tw`grid gap-5 grid-cols-[repeat(auto-fill,minmax(280px,1fr))
  */
 export function MyDecksPage() {
   const { t } = useTranslation();
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreate, setShowCreate] = useState(false);

@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 
@@ -12,7 +21,7 @@ import {
   type LessonBoardState,
   parseLessonBoardStored,
 } from '@/shared/lib/lessonBoardModel';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 export type ClassroomWhiteboardOverlayProps = {
   open: boolean;
@@ -33,28 +42,28 @@ function loadBoardFromStorage(linkId: number): LessonBoardState {
     : cloneLessonBoardState(DEFAULT_LESSON_BOARD_STATE);
 }
 
-export function ClassroomWhiteboardOverlay({
-  open,
-  linkId,
-  onClose,
-}: ClassroomWhiteboardOverlayProps) {
+type PanelProps = {
+  linkId: number;
+  onClose: () => void;
+};
+
+function ClassroomWhiteboardOpenPanel({ linkId, onClose }: PanelProps) {
   const { t } = useTranslation();
-  const accessToken = useAppSelector((s) => s.auth.accessToken);
+  const accessToken = useAuthStore((s) => s.accessToken);
   const saveTimerRef = useRef<number | undefined>(undefined);
   const wsSendTimerRef = useRef<number | undefined>(undefined);
   const wsRef = useRef<WebSocket | null>(null);
+  const boardRef = useRef<LessonBoardState | null>(null);
   const [syncStatus, setSyncStatus] = useState<
     'connecting' | 'live' | 'offline'
-  >('offline');
+  >(() => (accessToken ? 'connecting' : 'offline'));
   const [board, setBoard] = useState<LessonBoardState>(() =>
     loadBoardFromStorage(linkId),
   );
-  const boardRef = useRef(board);
-  boardRef.current = board;
 
-  useEffect(() => {
-    if (open) setBoard(loadBoardFromStorage(linkId));
-  }, [open, linkId]);
+  useLayoutEffect(() => {
+    boardRef.current = board;
+  }, [board]);
 
   useEffect(
     () => () => {
@@ -65,7 +74,6 @@ export function ClassroomWhiteboardOverlay({
   );
 
   useEffect(() => {
-    if (!open) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
@@ -76,7 +84,7 @@ export function ClassroomWhiteboardOverlay({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, onClose]);
+  }, [onClose]);
 
   const applyRemoteBoard = useCallback(
     (next: LessonBoardState) => {
@@ -91,13 +99,15 @@ export function ClassroomWhiteboardOverlay({
   );
 
   useEffect(() => {
-    if (!open || !accessToken) {
-      setSyncStatus('offline');
-      return;
+    if (!accessToken) {
+      const id = window.requestAnimationFrame(() => setSyncStatus('offline'));
+      return () => window.cancelAnimationFrame(id);
     }
     let cancelled = false;
     const url = classroomWhiteboardWebSocketUrl(linkId, accessToken);
-    setSyncStatus('connecting');
+    const statusFrame = window.requestAnimationFrame(() => {
+      if (!cancelled) setSyncStatus('connecting');
+    });
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
@@ -105,7 +115,8 @@ export function ClassroomWhiteboardOverlay({
       if (cancelled) return;
       setSyncStatus('live');
       try {
-        ws.send(encodeLessonBoardWire(boardRef.current));
+        const snap = boardRef.current;
+        if (snap) ws.send(encodeLessonBoardWire(snap));
       } catch {
         /* ignore */
       }
@@ -126,6 +137,7 @@ export function ClassroomWhiteboardOverlay({
 
     return () => {
       cancelled = true;
+      window.cancelAnimationFrame(statusFrame);
       const w = wsRef.current;
       wsRef.current = null;
       if (
@@ -135,7 +147,7 @@ export function ClassroomWhiteboardOverlay({
       )
         w.close();
     };
-  }, [open, linkId, accessToken, applyRemoteBoard]);
+  }, [linkId, accessToken, applyRemoteBoard]);
 
   const flushWsSend = useCallback((snapshot: LessonBoardState) => {
     const ws = wsRef.current;
@@ -169,17 +181,16 @@ export function ClassroomWhiteboardOverlay({
     [linkId, flushWsSend],
   );
 
-  const onBoardChange: React.Dispatch<React.SetStateAction<LessonBoardState>> =
-    useCallback(
-      (action) => {
-        setBoard((prev) => {
-          const next = typeof action === 'function' ? action(prev) : action;
-          schedulePersist(next);
-          return next;
-        });
-      },
-      [schedulePersist],
-    );
+  const onBoardChange: Dispatch<SetStateAction<LessonBoardState>> = useCallback(
+    (action) => {
+      setBoard((prev) => {
+        const next = typeof action === 'function' ? action(prev) : action;
+        schedulePersist(next);
+        return next;
+      });
+    },
+    [schedulePersist],
+  );
 
   const syncLabel = useMemo(() => {
     if (syncStatus === 'live') return t('classroom.whiteboard.syncLive');
@@ -187,8 +198,6 @@ export function ClassroomWhiteboardOverlay({
       return t('classroom.whiteboard.syncConnecting');
     return t('classroom.whiteboard.syncOffline');
   }, [syncStatus, t]);
-
-  if (!open) return null;
 
   return (
     <div
@@ -224,5 +233,20 @@ export function ClassroomWhiteboardOverlay({
         <LessonBoard state={board} onChange={onBoardChange} />
       </div>
     </div>
+  );
+}
+
+export function ClassroomWhiteboardOverlay({
+  open,
+  linkId,
+  onClose,
+}: ClassroomWhiteboardOverlayProps) {
+  if (!open) return null;
+  return (
+    <ClassroomWhiteboardOpenPanel
+      key={linkId}
+      linkId={linkId}
+      onClose={onClose}
+    />
   );
 }

@@ -9,7 +9,7 @@ import { LessonBlockView } from '@/entities/LessonBlock';
 import type { LessonItem } from '@/shared/api/types';
 import { lessonSectionsSorted } from '@/shared/lib/lessonSections';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const wideShellClasses = tw`box-border w-full pt-10 pb-12`;
 const sectionBtnBase = tw`w-full text-left rounded-[12px] px-3 py-2.5 font-semibold cursor-pointer border bg-transparent`;
@@ -28,7 +28,7 @@ export function LessonViewPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const me = useAppSelector((s) => s.auth.user);
+  const me = useAuthStore((s) => s.user);
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null);
 
   const lessonId = Number(id);

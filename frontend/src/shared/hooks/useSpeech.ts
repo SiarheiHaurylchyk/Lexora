@@ -6,11 +6,11 @@
  *                   component to play a word out loud.
  *
  * The user can override which voice is used per language and how fast normal
- * and "slow" playback should be — all of that lives in `settingsSlice`.
+ * and "slow" playback should be — all of that lives in `useSettingsStore`.
  */
 import { useCallback, useEffect, useState } from 'react';
 
-import { useAppSelector } from '../lib/storeHooks';
+import { useSettingsStore } from '../lib/storeHooks';
 
 /** Mic / browser STT: pick locale from OS + page hints (not true spoken-language detection). */
 export const BROWSER_STT_LANG_AUTO = 'auto';
@@ -204,7 +204,7 @@ export function useVoices() {
 /** Top-level speech hook: gives `speak`, `stop`, and friends. */
 export function useSpeech() {
   const voices = useVoices();
-  const speechSettings = useAppSelector((s) => s.settings.speech);
+  const speechSettings = useSettingsStore((s) => s.speech);
 
   /** Choose the best voice for a language, honoring the user's saved preference. */
   const pickVoice = useCallback(

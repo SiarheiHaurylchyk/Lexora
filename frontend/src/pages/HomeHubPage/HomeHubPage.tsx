@@ -6,7 +6,7 @@ import { ArrowRight, CalendarClock, GraduationCap, Layers } from 'lucide-react';
 import type { NextBookingPayload } from '@/shared/api/types';
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const choiceCardClasses = tw`block overflow-hidden rounded-[18px] border border-border bg-surface text-inherit cursor-pointer transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(0,0,0,0.22)] hover:border-[rgba(124,58,237,0.35)] no-underline`;
 const choiceTopClasses = tw`relative flex h-[108px] items-center justify-center`;
@@ -20,7 +20,7 @@ const iconStyle: CSSProperties = {
  */
 export function HomeHubPage() {
   const { t } = useTranslation();
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
   const canTeach = userCanTeach(user?.role);
   const nextBookingQuery = useApiQuery<NextBookingPayload>({
     queryKey: ['bookings', 'next'],

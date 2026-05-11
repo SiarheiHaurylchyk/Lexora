@@ -140,6 +140,14 @@ export default defineConfig([
     },
   },
   {
+    files: ['src/shared/stores/**/*.{ts,tsx}'],
+    rules: {
+      // These modules define the global Zustand stores; importing the shared
+      // `createStore` wrapper here is the intended bootstrap, not a consumer hook.
+      'fsd/no-global-store-imports': 'off',
+    },
+  },
+  {
     plugins: {
       'simple-import-sort': simpleImportSort,
       import: importPlugin,
@@ -165,7 +173,6 @@ export default defineConfig([
         },
       ],
       'simple-import-sort/exports': 'error',
-      'linebreak-style': ['error', 'unix'],
       'import/first': 'error',
       'import/newline-after-import': ['error', { count: 1 }],
       'import/no-duplicates': 'error',
@@ -242,6 +249,14 @@ export default defineConfig([
     rules: {
       'import/no-default-export': 'off',
       'fsd/no-global-store-imports': 'off',
+    },
+  },
+  {
+    files: ['src/index.tsx'],
+    rules: {
+      // Entry: side-effect imports for tw/cn globals + Zustand/API bootstrap before App.
+      'fsd/no-global-store-imports': 'off',
+      'fsd/ordered-imports': 'off',
     },
   },
   // -------------------------------------------------------------------------

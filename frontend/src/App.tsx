@@ -47,7 +47,7 @@ import { StudyPage } from '@/pages/StudyPage';
 import { TeacherDetailPage } from '@/pages/TeacherDetailPage';
 import { TeachersPage } from '@/pages/TeachersPage';
 
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 /**
  * App — the top-level component. It sets up:
@@ -65,13 +65,13 @@ import { useAppSelector } from '@/shared/lib/storeHooks';
 
 /** Wrap pages that require an authenticated user; otherwise redirect to /login. */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return isAuthenticated ? <>{children}</> : <Navigate to='/login' replace />;
 }
 
 /** Wrap pages that only make sense for guests (login form, etc.). */
 function GuestRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return !isAuthenticated ? <>{children}</> : <Navigate to='/home' replace />;
 }
 

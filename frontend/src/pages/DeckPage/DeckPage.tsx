@@ -9,7 +9,7 @@ import type { CardItem, DeckItem } from '@/shared/api/types';
 import { useSpeech } from '@/shared/hooks/useSpeech';
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const STUDY_MODES = [
   { key: 'FLASHCARD', icon: '⚡' },
@@ -24,7 +24,7 @@ export function DeckPage() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
   const { speak } = useSpeech();
   const [searchQ, setSearchQ] = useState('');
   const [showShare, setShowShare] = useState(false);

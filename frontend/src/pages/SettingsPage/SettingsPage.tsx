@@ -14,7 +14,7 @@ import { LearningLanguageSelect } from '@/entities/LearningLanguage';
 import { authApi } from '@/shared/api/api-legacy';
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { updateUser } from '@/shared/lib/storeActions';
-import { useAppDispatch, useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 type TabId = 'account' | 'voice' | 'teacher';
 
@@ -32,9 +32,8 @@ const tabActive = tw`bg-bg3 text-text shadow-[0_0_0_1px_var(--color-border2)]`;
  */
 export function SettingsPage() {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
   const [searchParams, setSearchParams] = useSearchParams();
   const canTeach = userCanTeach(user?.role);
 
@@ -103,7 +102,7 @@ export function SettingsPage() {
     setSavingName(true);
     try {
       const { data } = await authApi.patchProfile({ displayName });
-      dispatch(updateUser(data));
+      updateUser(data);
       toast.success(t('settings.account.savedName'));
     } catch {
       toast.error(t('settings.account.saveFailed'));
@@ -118,7 +117,7 @@ export function SettingsPage() {
       const { data } = await authApi.patchProfile({
         learningLanguage: learningLanguage.trim(),
       });
-      dispatch(updateUser(data));
+      updateUser(data);
       toast.success(t('settings.account.savedLearningLanguage'));
     } catch {
       toast.error(t('settings.account.saveFailed'));
@@ -148,7 +147,7 @@ export function SettingsPage() {
           : {}),
         learningGoalNotes: goalNotes.trim(),
       });
-      dispatch(updateUser(data));
+      updateUser(data);
       toast.success(t('settings.account.savedGoals'));
     } catch {
       toast.error(t('settings.account.saveFailed'));

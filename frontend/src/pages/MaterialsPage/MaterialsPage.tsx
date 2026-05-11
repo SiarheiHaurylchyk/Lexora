@@ -20,7 +20,7 @@ import type {
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { useApiInfiniteQuery, useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 type TabKey = 'catalog' | 'personal' | 'whiteboards';
 
@@ -45,7 +45,7 @@ export function MaterialsPage() {
   const linkId = linkIdParam ? Number(linkIdParam) : NaN;
   const classLinkOk = Number.isFinite(linkId) && linkId > 0;
 
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
   const canTeach = userCanTeach(user?.role);
   const myUserId = user?.id;
 

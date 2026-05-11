@@ -3,14 +3,14 @@ import { Navigate } from 'react-router-dom';
 import { AvailabilityEditor } from '@/widgets/AvailabilityEditor';
 
 import { userCanTeach } from '@/shared/lib/accountRole';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 /**
  * Teacher-only weekly availability — standalone route (sidebar "My schedule").
  * No Settings chrome so this entry never feels like "opening settings".
  */
 export function SchedulePage() {
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
 
   if (!userCanTeach(user?.role)) {
     return <Navigate to='/home' replace />;

@@ -8,7 +8,7 @@ import {
   setNormalRate,
   setSlowRate,
 } from '@/shared/lib/storeActions';
-import { useAppDispatch, useAppSelector } from '@/shared/lib/storeHooks';
+import { useSettingsStore } from '@/shared/lib/storeHooks';
 
 const LANGS = [
   'en',
@@ -47,9 +47,8 @@ const SAMPLE: Record<string, string> = {
 export function VoiceSettings() {
   const { t } = useTranslation();
   const voices = useVoices();
-  const dispatch = useAppDispatch();
   const { speak } = useSpeech();
-  const speech = useAppSelector((s) => s.settings.speech);
+  const speech = useSettingsStore((s) => s.speech);
 
   const voicesByLang = useMemo(() => {
     const map: Record<string, SpeechSynthesisVoice[]> = {};
@@ -91,7 +90,7 @@ export function VoiceSettings() {
             max={1.5}
             step={0.05}
             value={speech.normalRate}
-            onChange={(e) => dispatch(setNormalRate(Number(e.target.value)))}
+            onChange={(e) => setNormalRate(Number(e.target.value))}
             className='accent-brand-light w-full'
           />
         </div>
@@ -110,7 +109,7 @@ export function VoiceSettings() {
             max={1}
             step={0.05}
             value={speech.slowRate}
-            onChange={(e) => dispatch(setSlowRate(Number(e.target.value)))}
+            onChange={(e) => setSlowRate(Number(e.target.value))}
             className='accent-brand-light w-full'
           />
         </div>
@@ -138,12 +137,10 @@ export function VoiceSettings() {
                   className='input-field min-w-[180px] flex-1'
                   value={selected}
                   onChange={(e) =>
-                    dispatch(
-                      setLanguageVoice({
-                        lang: code,
-                        voiceURI: e.target.value,
-                      }),
-                    )
+                    setLanguageVoice({
+                      lang: code,
+                      voiceURI: e.target.value,
+                    })
                   }
                 >
                   <option value=''>{t('settings.voicePanel.autoVoice')}</option>
@@ -182,7 +179,7 @@ export function VoiceSettings() {
         <button
           type='button'
           className='btn btn-secondary btn-sm'
-          onClick={() => dispatch(resetSpeech())}
+          onClick={() => resetSpeech()}
         >
           {t('settings.voicePanel.resetAll')}
         </button>

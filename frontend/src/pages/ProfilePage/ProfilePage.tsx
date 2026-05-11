@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import type { DeckItem, LessonItem, StudySession } from '@/shared/api/types';
 import { useApiQuery } from '@/shared/lib/query';
 import { logout } from '@/shared/lib/storeActions';
-import { useAppDispatch, useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const MODE_ICONS: Record<string, string> = {
   FLASHCARD: '⚡',
@@ -29,8 +29,7 @@ const sessionRowClasses = tw`grid cursor-pointer items-center gap-4 grid-cols-[a
 
 export function ProfilePage() {
   const { t, i18n } = useTranslation();
-  const user = useAppSelector((s) => s.auth.user);
-  const dispatch = useAppDispatch();
+  const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
 
   const historyQuery = useApiQuery<StudySession[]>({
@@ -59,7 +58,7 @@ export function ProfilePage() {
   const learningLessons = lessonsQuery.data ?? [];
 
   const handleLogout = () => {
-    dispatch(logout());
+    logout();
     navigate('/');
   };
 
