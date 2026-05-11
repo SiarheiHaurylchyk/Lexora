@@ -1,20 +1,16 @@
-import {
-  type ChangeEvent,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, Button, IconButton } from '@ui';
 import { ArrowLeft, Paperclip, Smile } from 'lucide-react';
 
 import { chatApi } from '@/shared/api/api-legacy';
-import type { ChatMessage, UserSummary } from '@/shared/api/types';
+import type { ChatMessage, ChatThread } from '@/shared/api/types';
 import { useAuthenticatedBlobUrl } from '@/shared/hooks/useAuthenticatedBlobUrl';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 const POLL_MS = 5000;
@@ -114,9 +110,7 @@ export function ChatPage() {
   const myId = useAppSelector((s) => s.auth.user?.id);
 
   const peerId = Number(peerIdParam);
-  const [peer, setPeer] = useState<UserSummary | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [sending, setSending] = useState(false);
   const [draft, setDraft] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
@@ -129,50 +123,40 @@ export function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const loadThread = useCallback(
-    async (fromPoll = false) => {
-      if (!Number.isFinite(peerId)) {
-        if (!fromPoll) {
-          setLoading(false);
-          toast.error(t('chat.loadFailed'));
-          navigate('/messages', { replace: true });
-        }
-        return;
-      }
-      try {
-        const { data } = await chatApi.loadThread(peerId);
-        setPeer(data.peer);
-        setMessages(data.messages ?? []);
-        void chatApi.markRead(peerId).catch(() => {});
-      } catch (err) {
-        if (!fromPoll) {
-          const msg = getApiErrorMessage(err);
-          toast.error(msg || t('chat.loadFailed'));
-          if (inHub) navigate('/messages');
-          else navigate(-1);
-        }
-      } finally {
-        if (!fromPoll) setLoading(false);
-      }
-    },
-    [peerId, navigate, t, inHub],
-  );
+  const threadQuery = useApiQuery<ChatThread>({
+    queryKey: ['chat', 'thread', peerId],
+    url: `/chat/${peerId}/thread`,
+    enabled: Number.isFinite(peerId),
+    refetchInterval: POLL_MS,
+  });
+  const peer = threadQuery.data?.peer ?? null;
+  const messages = threadQuery.data?.messages ?? [];
+  const loading = threadQuery.isLoading;
 
   useEffect(() => {
-    void loadThread();
-  }, [loadThread]);
+    if (!Number.isFinite(peerId)) {
+      toast.error(t('chat.loadFailed'));
+      navigate('/messages', { replace: true });
+    }
+  }, [peerId, navigate, t]);
+
+  useEffect(() => {
+    if (!threadQuery.isLoadingError) return;
+    toast.error(getApiErrorMessage(threadQuery.error) || t('chat.loadFailed'));
+    if (inHub) navigate('/messages');
+    else navigate(-1);
+  }, [threadQuery.isLoadingError, threadQuery.error, inHub, navigate, t]);
+
+  useEffect(() => {
+    if (!threadQuery.data || !Number.isFinite(peerId)) return;
+    void chatApi.markRead(peerId).catch(() => {});
+    void queryClient.invalidateQueries({ queryKey: ['chat', 'unread-total'] });
+    void queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] });
+  }, [threadQuery.data, peerId, queryClient]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    if (!Number.isFinite(peerId) || loading) return undefined;
-    const id = window.setInterval(() => {
-      void loadThread(true);
-    }, POLL_MS);
-    return () => window.clearInterval(id);
-  }, [peerId, loading, loadThread]);
+  }, [messages.length]);
 
   useEffect(
     () => () => {
@@ -201,8 +185,15 @@ export function ChatPage() {
       setDraft('');
       if (pending?.previewLocal) URL.revokeObjectURL(pending.previewLocal);
       setPending(null);
-      setMessages((prev) => [...prev, data]);
-      void chatApi.markRead(peerId).catch(() => {});
+      queryClient.setQueryData<ChatThread | undefined>(
+        ['chat', 'thread', peerId],
+        (prev) =>
+          prev ? { ...prev, messages: [...prev.messages, data] } : prev,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: ['chat', 'thread', peerId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] });
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('chat.sendFailed'));
     } finally {

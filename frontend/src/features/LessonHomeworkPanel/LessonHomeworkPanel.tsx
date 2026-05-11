@@ -1,18 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button, SectionCard } from '@ui';
 
-import { assignmentsApi } from '@/shared/api/api-legacy';
 import type {
   LessonBlockItem,
   LessonBlockType,
   LessonItem,
+  StudentAssignmentItem,
 } from '@/shared/api/types';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { flattenLessonBlocks } from '@/shared/lib/lessonSections';
+import { useApiMutation } from '@/shared/lib/query';
 
 type DraftStudentId = number | '';
+
+interface AssignmentCreateBody {
+  studentUserId: number;
+  title: string;
+  instructions: string;
+  dueDate?: string;
+  lessonId: number;
+}
 
 interface Props {
   lesson: LessonItem;
@@ -64,15 +74,34 @@ export function LessonHomeworkPanel({
   draftStudentId,
 }: Props) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const blocks = flattenLessonBlocks(lesson);
   const [selected, setSelected] = useState<Record<number, boolean>>({});
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setSelected({});
   }, [lessonId]);
+
+  const submitMutation = useApiMutation<
+    StudentAssignmentItem,
+    AssignmentCreateBody
+  >({
+    method: 'post',
+    url: () => '/me/assignments',
+    body: (v) => v,
+    onSuccess: () => {
+      toast.success(t('lessons.homework.sentToast'));
+      setDueDate('');
+      setNotes('');
+      setSelected({});
+      void queryClient.invalidateQueries({ queryKey: ['assignments'] });
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err) || t('lessons.homework.sendFailed'));
+    },
+  });
 
   const serverStudentId = lesson.student?.id;
   const studentAligned =
@@ -90,7 +119,7 @@ export function LessonHomeworkPanel({
   const toggle = (id: number) =>
     setSelected((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const sendHomework = async () => {
+  const sendHomework = () => {
     if (!canSubmit || serverStudentId == null) return;
     const bullets = selectedBlocks
       .map((b) => `• ${blockHomeworkLabel(b, t)}`)
@@ -99,24 +128,13 @@ export function LessonHomeworkPanel({
     if (notes.trim()) instructions += `\n\n${notes.trim()}`;
     instructions += `\n\n${t('lessons.homework.lessonLinkHint', { path: `/lessons/${lessonId}` })}`;
 
-    setSubmitting(true);
-    try {
-      await assignmentsApi.create({
-        studentUserId: serverStudentId,
-        title: buildAssignmentTitle(lesson.title, t),
-        instructions,
-        dueDate: dueDate.trim() || undefined,
-        lessonId,
-      });
-      toast.success(t('lessons.homework.sentToast'));
-      setDueDate('');
-      setNotes('');
-      setSelected({});
-    } catch (err) {
-      toast.error(getApiErrorMessage(err) || t('lessons.homework.sendFailed'));
-    } finally {
-      setSubmitting(false);
-    }
+    submitMutation.mutate({
+      studentUserId: serverStudentId,
+      title: buildAssignmentTitle(lesson.title, t),
+      instructions,
+      dueDate: dueDate.trim() || undefined,
+      lessonId,
+    });
   };
 
   const studentLabel =
@@ -200,10 +218,12 @@ export function LessonHomeworkPanel({
       </label>
 
       <Button
-        onClick={() => void sendHomework()}
-        disabled={!canSubmit || submitting}
+        onClick={sendHomework}
+        disabled={!canSubmit || submitMutation.isPending}
       >
-        {submitting ? t('common.loading') : t('lessons.homework.send')}
+        {submitMutation.isPending
+          ? t('common.loading')
+          : t('lessons.homework.send')}
       </Button>
     </SectionCard>
   );

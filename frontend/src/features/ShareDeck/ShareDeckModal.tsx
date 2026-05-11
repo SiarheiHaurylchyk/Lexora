@@ -1,14 +1,16 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button, IconButton, Modal, Skeleton, TextInput } from '@ui';
 
 import { PersonRow } from '@/entities/User';
 
-import { shareApi, studentsApi } from '@/shared/api/api-legacy';
+import { shareApi } from '@/shared/api/api-legacy';
 import type { DeckShare, StudentLink } from '@/shared/api/types';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { useConfirm } from '@/shared/lib/confirm';
+import { useApiQuery } from '@/shared/lib/query';
 
 interface Props {
   deckId: number;
@@ -19,33 +21,27 @@ interface Props {
 export function ShareDeckModal({ deckId, deckTitle, onClose }: Props) {
   const { t } = useTranslation();
   const confirm = useConfirm();
-  const [shares, setShares] = useState<DeckShare[]>([]);
-  const [students, setStudents] = useState<StudentLink[]>([]);
+  const queryClient = useQueryClient();
+  const sharesKey = ['decks', deckId, 'shares'] as const;
   const [email, setEmail] = useState('');
   const [adding, setAdding] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  const sharesQuery = useApiQuery<DeckShare[]>({
+    queryKey: sharesKey,
+    url: `/decks/${deckId}/shares`,
+  });
+  const studentsQuery = useApiQuery<StudentLink[]>({
+    queryKey: ['students', 'my-students'],
+    url: '/students/my-students',
+  });
+  const shares = sharesQuery.data ?? [];
+  const students = studentsQuery.data ?? [];
+  const loading = sharesQuery.isLoading || studentsQuery.isLoading;
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [sharesRes, studentsRes] = await Promise.all([
-          shareApi.listDeckShares(deckId),
-          studentsApi.getMyStudents(),
-        ]);
-        if (cancelled) return;
-        setShares(sharesRes.data);
-        setStudents(studentsRes.data);
-      } catch {
-        if (!cancelled) toast.error(t('share.loadFailed'));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [deckId, t]);
+    if (sharesQuery.isError || studentsQuery.isError)
+      toast.error(t('share.loadFailed'));
+  }, [sharesQuery.isError, studentsQuery.isError, t]);
 
   const shareWith = async (targetEmail: string) => {
     if (!targetEmail.trim()) return;
@@ -55,11 +51,11 @@ export function ShareDeckModal({ deckId, deckTitle, onClose }: Props) {
         deckId,
         targetEmail.trim(),
       );
-      setShares((prev) => [data, ...prev]);
       setEmail('');
       toast.success(
         t('share.added', { name: data.user.displayName || data.user.username }),
       );
+      void queryClient.invalidateQueries({ queryKey: sharesKey });
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('share.addFailed'));
     } finally {
@@ -77,8 +73,8 @@ export function ShareDeckModal({ deckId, deckTitle, onClose }: Props) {
     if (!ok) return;
     try {
       await shareApi.removeDeckShare(deckId, share.shareId);
-      setShares((prev) => prev.filter((x) => x.shareId !== share.shareId));
       toast.success(t('share.revoked'));
+      void queryClient.invalidateQueries({ queryKey: sharesKey });
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('share.revokeFailed'));
     }
