@@ -81,7 +81,6 @@ export function ScheduleSlotModal({
   >(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOverlapConflict(null);
     if (!ctx) return;
     if (ctx.kind === 'new') {

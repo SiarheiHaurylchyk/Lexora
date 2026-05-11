@@ -50,11 +50,9 @@ export function ClassroomWhiteboardOverlay({
     loadBoardFromStorage(linkId),
   );
   const boardRef = useRef(board);
-  // eslint-disable-next-line react-hooks/refs
   boardRef.current = board;
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setBoard(loadBoardFromStorage(linkId));
   }, [open, linkId]);
 
@@ -94,7 +92,6 @@ export function ClassroomWhiteboardOverlay({
 
   useEffect(() => {
     if (!open || !accessToken) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSyncStatus('offline');
       return;
     }

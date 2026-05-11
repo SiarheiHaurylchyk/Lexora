@@ -181,14 +181,12 @@ export function AiPage() {
   }, [whisperAvailable]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!whisperAvailable && sttMode === 'whisper') setSttMode('browser');
   }, [whisperAvailable, sttMode]);
 
   useEffect(() => {
     if (sttMode === 'whisper') speechRec.stop();
     else whisperMic.discard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sttMode, speechRec.stop, whisperMic.discard]);
 
   useEffect(() => {
@@ -201,7 +199,6 @@ export function AiPage() {
       toast(t('ai.micStoppedLangChange'), { duration: 3800 });
     }
     prevSpeechLangForStop.current = speechLang;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speechLang, speechRec.listening, speechRec.stop, t]);
 
   const scrollDown = () =>

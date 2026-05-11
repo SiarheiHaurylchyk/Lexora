@@ -1,6 +1,8 @@
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import Layout from '@/app/layout';
 import {
@@ -8,6 +10,7 @@ import {
   DocumentLang,
   LessonCallProvider,
 } from '@/app/providers';
+import queryClient from '@/app/queryClient';
 
 import { AiPage } from '@/pages/AiPage';
 import { AssignmentsPage } from '@/pages/AssignmentsPage';
@@ -87,91 +90,94 @@ const TOAST_OPTIONS = {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <ConfirmProvider>
-        <LessonCallProvider>
-          <DocumentLang />
-          <Toaster position='top-right' toastOptions={TOAST_OPTIONS} />
-          <Routes>
-            <Route
-              path='/'
-              element={
-                <GuestRoute>
-                  <LandingPage />
-                </GuestRoute>
-              }
-            />
-            <Route
-              path='/login'
-              element={
-                <GuestRoute>
-                  <LoginPage />
-                </GuestRoute>
-              }
-            />
-            <Route
-              path='/register'
-              element={
-                <GuestRoute>
-                  <RegisterPage />
-                </GuestRoute>
-              }
-            />
-
-            <Route
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path='/home' element={<HomeHubPage />} />
-              <Route path='/decks' element={<MyDecksPage />} />
-              <Route path='/dashboard' element={<DashboardPage />} />
-              <Route path='/explore' element={<ExplorePage />} />
-              <Route path='/teachers' element={<TeachersPage />} />
-              <Route path='/teachers/:id' element={<TeacherDetailPage />} />
-              <Route path='/messages' element={<MessagesLayout />}>
-                <Route index element={<MessagesIndexPlaceholder />} />
-                <Route path=':peerId' element={<ChatPage />} />
-              </Route>
-              <Route path='/chat/:peerId' element={<ChatPage />} />
-              <Route path='/decks/:id' element={<DeckPage />} />
-              <Route path='/decks/:id/edit' element={<EditDeckPage />} />
-              <Route path='/decks/:id/study/:mode' element={<StudyPage />} />
-              <Route path='/profile' element={<ProfilePage />} />
-              <Route path='/settings' element={<SettingsPage />} />
-              {/* Quick deep-link aliases used by the user-menu dropdown. */}
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <ConfirmProvider>
+          <LessonCallProvider>
+            <DocumentLang />
+            <Toaster position='top-right' toastOptions={TOAST_OPTIONS} />
+            <Routes>
               <Route
-                path='/settings/availability'
-                element={<Navigate to='/schedule' replace />}
+                path='/'
+                element={
+                  <GuestRoute>
+                    <LandingPage />
+                  </GuestRoute>
+                }
               />
-              <Route path='/schedule' element={<SchedulePage />} />
-              <Route path='/bookings' element={<MyBookingsPage />} />
-              <Route path='/lesson-call' element={<LessonCallPage />} />
-              <Route path='/assignments' element={<AssignmentsPage />} />
-              <Route path='/become-teacher' element={<BecomeTeacherPage />} />
-              <Route path='/progress' element={<ProgressPage />} />
-              <Route path='/ai' element={<AiPage />} />
+              <Route
+                path='/login'
+                element={
+                  <GuestRoute>
+                    <LoginPage />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path='/register'
+                element={
+                  <GuestRoute>
+                    <RegisterPage />
+                  </GuestRoute>
+                }
+              />
 
-              {/* Grid of shared classrooms (both roles). */}
-              <Route path='/classes' element={<MyClassesPage />} />
-              {/* Teachers: roster & notes. Learners: who added me (list detail). */}
-              <Route path='/students' element={<StudentsPage />} />
-              <Route path='/class/:linkId' element={<ClassroomPage />} />
-              <Route path='/shared' element={<SharedDecksPage />} />
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path='/home' element={<HomeHubPage />} />
+                <Route path='/decks' element={<MyDecksPage />} />
+                <Route path='/dashboard' element={<DashboardPage />} />
+                <Route path='/explore' element={<ExplorePage />} />
+                <Route path='/teachers' element={<TeachersPage />} />
+                <Route path='/teachers/:id' element={<TeacherDetailPage />} />
+                <Route path='/messages' element={<MessagesLayout />}>
+                  <Route index element={<MessagesIndexPlaceholder />} />
+                  <Route path=':peerId' element={<ChatPage />} />
+                </Route>
+                <Route path='/chat/:peerId' element={<ChatPage />} />
+                <Route path='/decks/:id' element={<DeckPage />} />
+                <Route path='/decks/:id/edit' element={<EditDeckPage />} />
+                <Route path='/decks/:id/study/:mode' element={<StudyPage />} />
+                <Route path='/profile' element={<ProfilePage />} />
+                <Route path='/settings' element={<SettingsPage />} />
+                {/* Quick deep-link aliases used by the user-menu dropdown. */}
+                <Route
+                  path='/settings/availability'
+                  element={<Navigate to='/schedule' replace />}
+                />
+                <Route path='/schedule' element={<SchedulePage />} />
+                <Route path='/bookings' element={<MyBookingsPage />} />
+                <Route path='/lesson-call' element={<LessonCallPage />} />
+                <Route path='/assignments' element={<AssignmentsPage />} />
+                <Route path='/become-teacher' element={<BecomeTeacherPage />} />
+                <Route path='/progress' element={<ProgressPage />} />
+                <Route path='/ai' element={<AiPage />} />
 
-              {/* Lesson pages: list, view (read-only), edit */}
-              <Route path='/materials' element={<MaterialsPage />} />
-              <Route path='/lessons' element={<LessonsPage />} />
-              <Route path='/lessons/:id' element={<LessonViewPage />} />
-              <Route path='/lessons/:id/edit' element={<LessonEditPage />} />
-            </Route>
+                {/* Grid of shared classrooms (both roles). */}
+                <Route path='/classes' element={<MyClassesPage />} />
+                {/* Teachers: roster & notes. Learners: who added me (list detail). */}
+                <Route path='/students' element={<StudentsPage />} />
+                <Route path='/class/:linkId' element={<ClassroomPage />} />
+                <Route path='/shared' element={<SharedDecksPage />} />
 
-            <Route path='*' element={<Navigate to='/' replace />} />
-          </Routes>
-        </LessonCallProvider>
-      </ConfirmProvider>
-    </BrowserRouter>
+                {/* Lesson pages: list, view (read-only), edit */}
+                <Route path='/materials' element={<MaterialsPage />} />
+                <Route path='/lessons' element={<LessonsPage />} />
+                <Route path='/lessons/:id' element={<LessonViewPage />} />
+                <Route path='/lessons/:id/edit' element={<LessonEditPage />} />
+              </Route>
+
+              <Route path='*' element={<Navigate to='/' replace />} />
+            </Routes>
+          </LessonCallProvider>
+        </ConfirmProvider>
+      </BrowserRouter>
+      <ReactQueryDevtools initialIsOpen={false} buttonPosition='bottom-left' />
+    </QueryClientProvider>
   );
 }

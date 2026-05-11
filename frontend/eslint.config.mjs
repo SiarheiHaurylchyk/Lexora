@@ -244,4 +244,37 @@ export default defineConfig([
       'fsd/no-global-store-imports': 'off',
     },
   },
+  // -------------------------------------------------------------------------
+  // React-hooks RC rules — downgraded from `error` to `warn`.
+  //
+  // The default `reactHooks.configs.flat.recommended` enables several rules
+  // from the experimental react-compiler track that flag patterns which are
+  // technically suboptimal but still idiomatic across the codebase:
+  //
+  //   • `set-state-in-effect` — fires on the classic
+  //     `useEffect(() => api.fetch().then(setData), [...])` data-fetching
+  //     pattern. The proper fix is migration to TanStack Query (see
+  //     `shared/lib/query/useApiQuery.ts` + `docs/tanstack_query.md`).
+  //   • `static-components` — fires on render-helper functions defined
+  //     inline inside a parent component (e.g. `const renderRow = () => ...`).
+  //     Lifting them out requires threading large numbers of props.
+  //   • `impure-function`, `refs` — small-scoped, surface in legacy code only.
+  //
+  // Keeping these as warnings lets the build stay green while the codebase
+  // is incrementally refactored onto TanStack Query / module-level helpers.
+  // Promote each rule back to `error` once its category is fully addressed.
+  // -------------------------------------------------------------------------
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/static-components': 'warn',
+      'react-hooks/purity': 'warn',
+      'react-hooks/refs': 'warn',
+      // The compiler-track rules below piggy-back on the same migration plan:
+      'react-hooks/exhaustive-effect-dependencies': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/use-memo': 'warn',
+    },
+  },
 ]);

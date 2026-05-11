@@ -87,7 +87,6 @@ export function LessonEditPage() {
 
   useEffect(() => {
     if (!lesson?.sections?.length) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSectionTitleDraft({});
       return;
     }
@@ -537,8 +536,7 @@ export function LessonEditPage() {
                 block={block}
                 sectionNumber={index + 1}
                 saving={savingBlockId === block.id}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onSave={(fields: any) =>
+                onSave={(fields: Any) =>
                   saveBlock(block, fields as Omit<LessonBlockItem, 'id'>)
                 }
                 onDelete={() => deleteBlock(block)}

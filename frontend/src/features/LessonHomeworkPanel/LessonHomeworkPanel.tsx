@@ -71,7 +71,6 @@ export function LessonHomeworkPanel({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelected({});
   }, [lessonId]);
 

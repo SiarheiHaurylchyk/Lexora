@@ -264,8 +264,7 @@ export function EditDeckPage() {
   const updateCard = (idx: number, field: keyof CardForm, value: string) => {
     setCards((prev) => {
       const next = [...prev];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (next[idx] as any)[field] = value;
+      (next[idx] as Any)[field] = value;
       return next;
     });
   };

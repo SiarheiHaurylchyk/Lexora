@@ -73,7 +73,6 @@ export function StudentsPage() {
     students.forEach((s) => {
       next[s.linkId] = s.privateNotes ?? '';
     });
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNotesDraft(next);
   }, [students]);
 

@@ -79,7 +79,6 @@ export function AssignmentsPage() {
     received.forEach((x) => {
       d[x.id] = x.studentResponse ?? '';
     });
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResponseDrafts(d);
   }, [received]);
 

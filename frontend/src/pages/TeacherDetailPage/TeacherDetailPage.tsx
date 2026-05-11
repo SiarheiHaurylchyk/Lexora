@@ -83,7 +83,6 @@ export function TeacherDetailPage() {
     if (!teacher) return;
     const vr = teacher.viewerReview;
     if (vr) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReviewRating(vr.rating);
       setReviewComment(vr.comment ?? '');
     } else {

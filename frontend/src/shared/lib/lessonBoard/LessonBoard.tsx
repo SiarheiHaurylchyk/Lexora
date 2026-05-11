@@ -472,9 +472,7 @@ export function LessonBoard({ className, state, onChange }: LessonBoardProps) {
   const [showGrid, setShowGrid] = useState(true);
   const [textEdit, setTextEdit] = useState<TextEditState | null>(null);
 
-  // eslint-disable-next-line react-hooks/refs
   textEditRef.current = textEdit;
-  // eslint-disable-next-line react-hooks/refs
   selectedIdRef.current = selectedId;
 
   const opacity = opacityPct / 100;
@@ -606,7 +604,6 @@ export function LessonBoard({ className, state, onChange }: LessonBoardProps) {
       }
       ctx.restore();
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.strokes, state.view, selectedId, resizingSelection, showGrid]);
 
   useEffect(() => {
@@ -642,7 +639,6 @@ export function LessonBoard({ className, state, onChange }: LessonBoardProps) {
 
   useEffect(() => {
     if (selectedId && !state.strokes.some((s) => s.id === selectedId)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedId(null);
     }
   }, [state.strokes, selectedId]);

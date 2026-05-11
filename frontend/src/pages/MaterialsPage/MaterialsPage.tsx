@@ -89,7 +89,6 @@ export function MaterialsPage() {
   }, [canTeach]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (tab === 'catalog' && canTeach) void refreshSavedMap();
   }, [tab, canTeach, refreshSavedMap]);
 
@@ -125,7 +124,6 @@ export function MaterialsPage() {
 
   useEffect(() => {
     if (tab !== 'catalog') return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCatalogPage(0);
     void loadCatalogPage(0, true);
   }, [tab, debouncedQ, sort, loadCatalogPage]);
@@ -151,7 +149,6 @@ export function MaterialsPage() {
   }, [canTeach, t]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (tab === 'personal') void loadPersonal();
   }, [tab, loadPersonal]);
 

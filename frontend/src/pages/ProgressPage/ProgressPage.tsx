@@ -46,7 +46,6 @@ export function ProgressPage() {
 
   useEffect(() => {
     let alive = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     progressApi
       .get()

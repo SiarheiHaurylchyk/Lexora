@@ -32,11 +32,9 @@ export function ProfilePage() {
   const user = useAppSelector((s) => s.auth.user);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<Any[]>([]);
   const [learningLessons, setLearningLessons] = useState<LessonItem[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [decks, setDecks] = useState<any[]>([]);
+  const [decks, setDecks] = useState<Any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -262,8 +260,7 @@ export function ProfilePage() {
           </div>
         ) : (
           <div className='flex flex-col gap-2'>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {practiceRuns.map((session: any) => {
+            {practiceRuns.map((session: Any) => {
               const accuracy = session.accuracy || 0;
               const accuracyStyle: CSSProperties = {
                 color: accuracyColor(accuracy),

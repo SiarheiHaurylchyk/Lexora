@@ -92,7 +92,6 @@ export function CardImagePicker({
     clearAllLoadWatches();
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => clearTimers, []);
 
   const startNext = (afterId: number) => {

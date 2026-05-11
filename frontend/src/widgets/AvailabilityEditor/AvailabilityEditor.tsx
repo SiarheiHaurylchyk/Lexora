@@ -42,8 +42,6 @@ function startOfWeek(d: Date): Date {
   return out;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const cellBase = tw`flex h-8 w-full cursor-pointer items-center justify-center rounded-md border-none text-[11px] transition-colors`;
 const cellOpen = tw`bg-green-500/20 text-green-700 hover:bg-green-500/35 dark:text-green-400`;
 const cellBooked = tw`bg-[var(--accent)]/20 text-[var(--accent)] cursor-default`;
 const cellBlocked = tw`bg-[var(--text3)]/15 text-[var(--text3)] hover:bg-[var(--text3)]/25`;
@@ -100,7 +98,6 @@ export function AvailabilityEditor({
   }, [range.start, range.endExclusive, t]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchSlots();
   }, [fetchSlots]);
 

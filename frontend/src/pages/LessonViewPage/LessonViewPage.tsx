@@ -57,7 +57,6 @@ export function LessonViewPage() {
 
   useEffect(() => {
     if (sections.length === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveSectionId(null);
       return;
     }

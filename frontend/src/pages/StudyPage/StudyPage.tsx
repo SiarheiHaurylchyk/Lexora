@@ -272,8 +272,7 @@ function LearnMode({ cards, deck, sessionId, onComplete }: ModeProps) {
 
   const makeChoices = useCallback(() => {
     const wrong = cards
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((_: any, i: number) => i !== idx)
+      .filter((_: Any, i: number) => i !== idx)
       .map((c: CardItem) => c.definition);
     const shuffledWrong = wrong.sort(() => Math.random() - 0.5).slice(0, 3);
     const all = [...shuffledWrong, card.definition].sort(
@@ -285,7 +284,6 @@ function LearnMode({ cards, deck, sessionId, onComplete }: ModeProps) {
   }, [idx, cards, card]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     makeChoices();
     speak(card.term, deck.sourceLanguage);
   }, [idx, makeChoices, card.term, deck.sourceLanguage, speak]);
@@ -455,7 +453,6 @@ function SpellMode({ cards, deck, sessionId, onComplete }: ModeProps) {
   const prompt = prompts[idx];
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setInput('');
     setSubmitted(false);
     speak(prompt.question, prompt.questionLang);
@@ -570,8 +567,7 @@ function MatchMode({ cards, sessionId, onComplete }: ModeProps) {
   const [wrong, setWrong] = useState<Set<string>>(new Set());
   const [missedPairs, setMissedPairs] = useState<Set<number>>(new Set());
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const terms = slicedCards.map((c: any, i: number) => ({
+  const terms = slicedCards.map((c: Any, i: number) => ({
     text: c.term,
     id: i,
   }));
@@ -614,8 +610,7 @@ function MatchMode({ cards, sessionId, onComplete }: ModeProps) {
       if (newMatched.size === slicedCards.length) {
         setTimeout(() => {
           const finalResults: ModeResult[] = slicedCards.map(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (c: any, i: number) => {
+            (c: Any, i: number) => {
               const correct = !missedPairs.has(i);
               sendAnswer(sessionId, c.id, correct);
               return { cardId: c.id, correct };
@@ -693,8 +688,7 @@ function MatchMode({ cards, sessionId, onComplete }: ModeProps) {
 
       <div className='grid grid-cols-2 gap-4 max-[600px]:grid-cols-1'>
         <div className='flex flex-col gap-2.5'>
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {terms.map((titem: any, i: number) => (
+          {terms.map((titem: Any, i: number) => (
             <div
               key={i}
               className='rounded-[14px] px-4 py-3.5 text-center font-medium transition-all duration-200'
@@ -710,8 +704,7 @@ function MatchMode({ cards, sessionId, onComplete }: ModeProps) {
           ))}
         </div>
         <div className='flex flex-col gap-2.5'>
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {shuffledDefs.map((d: any, i: number) => (
+          {shuffledDefs.map((d: Any, i: number) => (
             <div
               key={i}
               className='rounded-[14px] px-4 py-3.5 text-center font-medium transition-all duration-200'
@@ -855,8 +848,7 @@ export function StudyPage() {
   const { id, mode } = useParams<{ id: string; mode: string }>();
   const navigate = useNavigate();
   const [deck, setDeck] = useState<DeckItem | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [cards, setCards] = useState<any[]>([]);
+  const [cards, setCards] = useState<CardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [phase, setPhase] = useState<'study' | 'result'>('study');

@@ -46,7 +46,6 @@ export function TeacherProfileForm() {
 
   useEffect(() => {
     if (!user) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHeadline(user.teacherHeadline ?? '');
     setBio(user.teacherBio ?? '');
     setResume(user.teacherResume ?? '');

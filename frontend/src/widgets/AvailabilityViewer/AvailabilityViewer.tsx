@@ -185,7 +185,6 @@ export const AvailabilityViewer = forwardRef<AvailabilityViewerHandle, Props>(
     );
 
     useEffect(() => {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       void fetchSlots();
     }, [fetchSlots]);
 

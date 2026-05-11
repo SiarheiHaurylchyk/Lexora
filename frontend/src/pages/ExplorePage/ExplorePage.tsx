@@ -14,8 +14,7 @@ const gridClasses = tw`grid gap-5 grid-cols-[repeat(auto-fill,minmax(280px,1fr))
 export function ExplorePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [decks, setDecks] = useState<any[]>([]);
+  const [decks, setDecks] = useState<Any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQ, setSearchQ] = useState('');
   const [searching, setSearching] = useState(false);
@@ -43,7 +42,6 @@ export function ExplorePage() {
   useEffect(() => {
     const q = searchQ.trim();
     if (!q) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPage(0);
       loadPublicPage(0, true);
       return;

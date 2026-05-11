@@ -19,8 +19,7 @@ import { CreateDeckModal } from '@/features/CreateDeck';
 import { DeckCard } from '@/entities/Deck';
 
 import { deckApi } from '@/shared/api/api-legacy';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { CardItem, DeckItem } from '@/shared/api/types';
+import type { DeckItem } from '@/shared/api/types';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 const STAT_COLORS = [
@@ -42,15 +41,13 @@ export function MyDecksPage() {
   const user = useAppSelector((s) => s.auth.user);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [decks, setDecks] = useState<any[]>([]);
+  const [decks, setDecks] = useState<Any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [searchQ, setSearchQ] = useState('');
 
   useEffect(() => {
     if (searchParams.get('new') === '1') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowCreate(true);
       setSearchParams({});
     }
@@ -69,7 +66,6 @@ export function MyDecksPage() {
   }, [t]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchDecks();
   }, [fetchDecks]);
 

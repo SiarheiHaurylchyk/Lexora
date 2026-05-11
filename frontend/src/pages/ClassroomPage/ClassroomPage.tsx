@@ -129,7 +129,6 @@ export function ClassroomPage() {
   >([]);
   const studentFocusSerialRef = useRef(0);
   const wsRef = useRef(ws);
-  // eslint-disable-next-line react-hooks/refs
   wsRef.current = ws;
   const [jumpStudentCtl, setJumpStudentCtl] = useState(0);
   const userClearedLessonRef = useRef(false);
@@ -169,7 +168,6 @@ export function ClassroomPage() {
     }
   }, [linkId]);
 
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const refreshPeerUnread = useCallback(async () => {
     if (!ws?.peer?.id) return;
     try {
@@ -184,7 +182,6 @@ export function ClassroomPage() {
   }, [ws?.peer?.id]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshPeerUnread();
     const id = window.setInterval(() => void refreshPeerUnread(), 20000);
     return () => window.clearInterval(id);
@@ -210,7 +207,6 @@ export function ClassroomPage() {
   useEffect(() => {
     const lid = ws?.activeLessonId;
     if (!lid) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLessonDetail(null);
       return;
     }
@@ -248,9 +244,7 @@ export function ClassroomPage() {
 
   useEffect(() => {
     if (ws == null) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshClassroomLessonOptions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ws?.asTeacher, linkId, refreshClassroomLessonOptions]);
 
   useEffect(() => {
@@ -316,7 +310,6 @@ export function ClassroomPage() {
     if (!sec) return;
     const mainEl = document.getElementById('classroom-main-column');
     if (sec === 'LESSON_SECTION' && ws.lessonFocusLessonSectionId != null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveLessonSection(`s-${ws.lessonFocusLessonSectionId}`);
       mainEl?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -449,14 +442,12 @@ export function ClassroomPage() {
   useEffect(() => {
     if (!lessonDetail?.sections?.length) return;
     const firstKey = `s-${lessonSectionsSorted(lessonDetail)[0].id}`;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveLessonSection((prev) => {
       const ok = lessonSectionsSorted(lessonDetail).some(
         (s) => `s-${s.id}` === prev,
       );
       return ok ? prev : firstKey;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonDetail?.id, lessonDetail?.sections]);
 
   useEffect(() => {

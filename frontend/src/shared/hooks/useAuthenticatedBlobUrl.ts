@@ -13,7 +13,6 @@ export function useAuthenticatedBlobUrl(
 
   useEffect(() => {
     if (!storedUrl) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBlobUrl(null);
       return undefined;
     }

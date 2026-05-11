@@ -66,7 +66,6 @@ export function NotificationBell({ placement }: Props) {
   }, [t]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshUnread();
     const id = window.setInterval(() => void refreshUnread(), POLL_MS);
     return () => window.clearInterval(id);
@@ -82,7 +81,6 @@ export function NotificationBell({ placement }: Props) {
 
   useEffect(() => {
     if (open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       void refreshUnread();
       void loadList();
     }

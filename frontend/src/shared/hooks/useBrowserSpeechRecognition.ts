@@ -93,7 +93,6 @@ export function useBrowserSpeechRecognition(
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const userStoppedRef = useRef(false);
   const optsRef = useRef(opts);
-  // eslint-disable-next-line react-hooks/refs
   optsRef.current = opts;
 
   useEffect(

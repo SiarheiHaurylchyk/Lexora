@@ -49,7 +49,6 @@ export function SettingsPage() {
   const [tab, setTab] = useState<TabId>(fromUrl);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTab(fromUrl);
   }, [fromUrl]);
 
@@ -60,7 +59,6 @@ export function SettingsPage() {
   }, [tab, fromUrl, setSearchParams]);
 
   const [displayName, setDisplayName] = useState(user?.displayName || '');
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setDisplayName(user?.displayName || ''), [user?.displayName]);
   const [savingName, setSavingName] = useState(false);
 
@@ -68,7 +66,6 @@ export function SettingsPage() {
     user?.learningLanguage || '',
   );
   useEffect(
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     () => setLearningLanguage(user?.learningLanguage || ''),
     [user?.learningLanguage],
   );
@@ -83,7 +80,6 @@ export function SettingsPage() {
   const [savingGoals, setSavingGoals] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCefrLevel(user?.cefrLevel || '');
     setGoalType(user?.learningGoalType || '');
     setGoalWeeks(

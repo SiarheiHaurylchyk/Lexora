@@ -107,7 +107,6 @@ export function MyBookingsPage() {
                 teacher?.username ||
                 t('bookings.unknownTeacher');
               const canCancel = canLearnerCancelBooking(s.startTime);
-              // eslint-disable-next-line react-hooks/purity
               const isFuture = new Date(s.startTime).getTime() > Date.now();
               const showWindowHint = isFuture && !canCancel;
 

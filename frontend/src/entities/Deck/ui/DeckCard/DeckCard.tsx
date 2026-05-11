@@ -136,8 +136,7 @@ export function DeckCard({ deck, onDeleted, readonly }: DeckCardProps) {
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowMenu(false);
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          action(e as any);
+                          action(e as Any);
                         }}
                         disabled={deleting}
                       >

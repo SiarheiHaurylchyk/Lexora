@@ -378,7 +378,6 @@ function MatchPairsStudent({
   const { pairs } = payload;
   const n = pairs.length;
   const pairSig = JSON.stringify(pairs);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const optionOrder = useMemo(() => shuffleIndices(n), [blockId, n, pairSig]);
   const [pickedCol, setPickedCol] = useState<number[]>(() => Array(n).fill(-1));
   const [checked, setChecked] = useState(false);
@@ -580,7 +579,6 @@ function WordOrderStudent({
   const initialShuffled = useMemo(() => {
     const copy = [...correct];
     for (let i = copy.length - 1; i > 0; i--) {
-      // eslint-disable-next-line react-hooks/purity
       const j = Math.floor(Math.random() * (i + 1));
       [copy[i], copy[j]] = [copy[j], copy[i]];
     }
@@ -588,7 +586,6 @@ function WordOrderStudent({
       [copy[0], copy[1]] = [copy[1], copy[0]];
     }
     return copy;
-    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
   }, [blockId, correct.join('')]);
 
   const [order, setOrder] = useState<string[]>(initialShuffled);

@@ -159,7 +159,6 @@ export function ChatPage() {
   );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadThread();
   }, [loadThread]);
 

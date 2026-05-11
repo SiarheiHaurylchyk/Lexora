@@ -59,7 +59,6 @@ export function ClassroomTimerPanel({ linkId, asTeacher, onClose }: Props) {
   }, [linkId, t]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
     const id = window.setInterval(() => void refresh(), 1600);
     return () => window.clearInterval(id);
@@ -75,10 +74,8 @@ export function ClassroomTimerPanel({ linkId, asTeacher, onClose }: Props) {
     if (!anchor || snap?.phase !== 'RUNNING' || !asTeacher) return 0;
     return Math.max(
       0,
-      // eslint-disable-next-line react-hooks/purity
       anchor.serverNowMs - anchor.startedAtMs + (Date.now() - anchor.clientMs),
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anchor, snap?.phase, asTeacher, tick]);
 
   const start = async () => {
