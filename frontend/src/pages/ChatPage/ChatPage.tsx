@@ -193,7 +193,9 @@ export function ChatPage() {
       void queryClient.invalidateQueries({
         queryKey: ['chat', 'thread', peerId],
       });
-      void queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['chat', 'conversations'],
+      });
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('chat.sendFailed'));
     } finally {

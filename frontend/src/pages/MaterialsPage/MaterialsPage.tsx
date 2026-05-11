@@ -1,19 +1,25 @@
 import {
   type CSSProperties,
   type MouseEvent,
-  useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@ui';
 
 import { deckApi, materialsApi } from '@/shared/api/api-legacy';
-import type { DeckItem } from '@/shared/api/types';
+import type {
+  DeckItem,
+  MaterialsPersonalViewDTO,
+  Paged,
+} from '@/shared/api/types';
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
+import { useApiInfiniteQuery, useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 type TabKey = 'catalog' | 'personal' | 'whiteboards';
@@ -43,22 +49,12 @@ export function MaterialsPage() {
   const canTeach = userCanTeach(user?.role);
   const myUserId = user?.id;
 
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<TabKey>('catalog');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [sort, setSort] = useState<'popular' | 'new'>('popular');
   const [searchQ, setSearchQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
-  const [catalogPage, setCatalogPage] = useState(0);
-  const [catalogItems, setCatalogItems] = useState<DeckItem[]>([]);
-  const [catalogTotal, setCatalogTotal] = useState(0);
-  const [catalogLoading, setCatalogLoading] = useState(true);
-  const [catalogSearching, setCatalogSearching] = useState(false);
-  const [hasMoreCatalog, setHasMoreCatalog] = useState(true);
-
-  const [personalOwned, setPersonalOwned] = useState<DeckItem[]>([]);
-  const [personalSaved, setPersonalSaved] = useState<DeckItem[]>([]);
-  const [personalLoading, setPersonalLoading] = useState(false);
-  const [savedMap, setSavedMap] = useState<Map<number, number>>(new Map());
 
   const [listingDeck, setListingDeck] = useState<DeckItem | null>(null);
   const [listingListed, setListingListed] = useState(false);
@@ -71,86 +67,70 @@ export function MaterialsPage() {
     return () => clearTimeout(tmr);
   }, [searchQ]);
 
-  const refreshSavedMap = useCallback(async () => {
-    if (!canTeach) {
-      setSavedMap(new Map());
-      return;
-    }
-    try {
-      const { data } = await materialsApi.personal();
-      const next = new Map<number, number>();
-      for (const d of data.savedFromCatalog || []) {
-        if (d.librarySaveId != null) next.set(d.id, d.librarySaveId);
-      }
-      setSavedMap(next);
-    } catch {
-      /* ignore */
-    }
-  }, [canTeach]);
-
-  useEffect(() => {
-    if (tab === 'catalog' && canTeach) void refreshSavedMap();
-  }, [tab, canTeach, refreshSavedMap]);
-
-  const loadCatalogPage = useCallback(
-    async (page: number, reset: boolean) => {
-      if (reset) {
-        setCatalogLoading(true);
-        setCatalogSearching(Boolean(debouncedQ));
-      }
-      try {
-        const { data } = await materialsApi.catalog({
-          page,
-          size: PAGE_SIZE,
-          q: debouncedQ || undefined,
-          sort,
-        });
-        const chunk = data.content || [];
-        setCatalogTotal(data.totalElements ?? chunk.length);
-        setCatalogItems((prev) => (reset ? chunk : [...prev, ...chunk]));
-        const pages = data.totalPages ?? 0;
-        setHasMoreCatalog(pages > 0 && page + 1 < pages);
-      } catch (err) {
-        toast.error(
-          getApiErrorMessage(err) || t('materials.catalogLoadFailed'),
-        );
-      } finally {
-        setCatalogLoading(false);
-        setCatalogSearching(false);
-      }
+  const catalogInfinite = useApiInfiniteQuery<Paged<DeckItem>>({
+    queryKey: ['materials', 'catalog', debouncedQ, sort],
+    url: (page) => {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('size', String(PAGE_SIZE));
+      if (debouncedQ) params.set('q', debouncedQ);
+      params.set('sort', sort);
+      return `/materials/catalog?${params.toString()}`;
     },
-    [debouncedQ, sort, t],
+    getNextPageParam: (last, all) =>
+      (last.totalPages ?? 0) > all.length ? all.length : undefined,
+    enabled: tab === 'catalog',
+  });
+
+  const catalogItems = useMemo(
+    () => (catalogInfinite.data?.pages ?? []).flatMap((p) => p.content ?? []),
+    [catalogInfinite.data],
   );
+  const catalogTotal =
+    catalogInfinite.data?.pages?.[0]?.totalElements ?? catalogItems.length;
+  const catalogLoading = catalogInfinite.isLoading;
+  const catalogSearching =
+    catalogInfinite.isFetching &&
+    Boolean(debouncedQ) &&
+    !catalogInfinite.isFetchingNextPage;
+  const hasMoreCatalog = catalogInfinite.hasNextPage;
 
   useEffect(() => {
-    if (tab !== 'catalog') return;
-    setCatalogPage(0);
-    void loadCatalogPage(0, true);
-  }, [tab, debouncedQ, sort, loadCatalogPage]);
+    if (catalogInfinite.isError)
+      toast.error(
+        getApiErrorMessage(catalogInfinite.error) ||
+          t('materials.catalogLoadFailed'),
+      );
+  }, [catalogInfinite.isError, catalogInfinite.error, t]);
 
-  const loadPersonal = useCallback(async () => {
-    setPersonalLoading(true);
-    try {
-      const { data } = await materialsApi.personal();
-      setPersonalOwned(data.owned || []);
-      setPersonalSaved(data.savedFromCatalog || []);
-      if (canTeach) {
-        const next = new Map<number, number>();
-        for (const d of data.savedFromCatalog || []) {
-          if (d.librarySaveId != null) next.set(d.id, d.librarySaveId);
-        }
-        setSavedMap(next);
-      }
-    } catch (err) {
-      toast.error(getApiErrorMessage(err) || t('materials.personalLoadFailed'));
-    } finally {
-      setPersonalLoading(false);
+  const personalQuery = useApiQuery<MaterialsPersonalViewDTO>({
+    queryKey: ['materials', 'personal'],
+    url: '/materials/personal',
+    enabled: tab === 'personal' || (tab === 'catalog' && canTeach),
+  });
+  const personalOwned = personalQuery.data?.owned ?? [];
+  const personalSaved = personalQuery.data?.savedFromCatalog ?? [];
+  const personalLoading = personalQuery.isLoading && tab === 'personal';
+
+  useEffect(() => {
+    if (tab === 'personal' && personalQuery.isError)
+      toast.error(
+        getApiErrorMessage(personalQuery.error) ||
+          t('materials.personalLoadFailed'),
+      );
+  }, [tab, personalQuery.isError, personalQuery.error, t]);
+
+  const savedMap = useMemo(() => {
+    const next = new Map<number, number>();
+    if (!canTeach) return next;
+    for (const d of personalQuery.data?.savedFromCatalog ?? []) {
+      if (d.librarySaveId != null) next.set(d.id, d.librarySaveId);
     }
-  }, [canTeach, t]);
+    return next;
+  }, [canTeach, personalQuery.data]);
 
-  useEffect(() => {
-    if (tab === 'personal') void loadPersonal();
-  }, [tab, loadPersonal]);
+  const invalidateMaterials = () =>
+    queryClient.invalidateQueries({ queryKey: ['materials'] });
 
   const openListingModal = (deck: DeckItem) => {
     setListingDeck(deck);
@@ -176,15 +156,13 @@ export function MaterialsPage() {
     }
     setListingSaving(true);
     try {
-      const { data } = await materialsApi.patchListing(listingDeck.id, {
+      await materialsApi.patchListing(listingDeck.id, {
         listedInMaterialsCatalog: listingListed,
         catalogPriceCents: price,
         cefrLevel: listingCefr.trim() || null,
       });
       toast.success(t('materials.listingSaved'));
-      setPersonalOwned((prev) =>
-        prev.map((d) => (d.id === data.id ? { ...d, ...data } : d)),
-      );
+      void invalidateMaterials();
       setListingDeck(null);
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('materials.listingSaveFailed'));
@@ -196,13 +174,9 @@ export function MaterialsPage() {
   const saveToLibrary = async (e: MouseEvent, deck: DeckItem) => {
     e.stopPropagation();
     try {
-      const { data } = await materialsApi.saveCatalogDeck(deck.id);
+      await materialsApi.saveCatalogDeck(deck.id);
       toast.success(t('materials.savedToLibrary'));
-      setSavedMap((prev) => {
-        const next = new Map(prev);
-        if (data.librarySaveId != null) next.set(deck.id, data.librarySaveId);
-        return next;
-      });
+      void invalidateMaterials();
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('materials.saveFailed'));
     }
@@ -213,12 +187,7 @@ export function MaterialsPage() {
     try {
       await materialsApi.unsaveCatalogDeck(deckId);
       toast.success(t('materials.removedFromLibrary'));
-      setSavedMap((prev) => {
-        const next = new Map(prev);
-        next.delete(deckId);
-        return next;
-      });
-      setPersonalSaved((prev) => prev.filter((d) => d.id !== deckId));
+      void invalidateMaterials();
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('materials.unsaveFailed'));
     }
@@ -236,9 +205,7 @@ export function MaterialsPage() {
   };
 
   const loadMoreCatalog = () => {
-    const next = catalogPage + 1;
-    setCatalogPage(next);
-    void loadCatalogPage(next, false);
+    void catalogInfinite.fetchNextPage();
   };
 
   const cardInner = (

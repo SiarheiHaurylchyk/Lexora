@@ -10,6 +10,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@ui';
 import {
   ArrowLeft,
@@ -28,8 +29,9 @@ import { LanguageSwitcher as LanguageSwitcherOld } from '@/widgets/LanguageSwitc
 import { NotificationBell } from '@/widgets/NotificationBell';
 import { UserMenu } from '@/widgets/UserMenu';
 
-import { chatApi, classroomsApi, lessonsApi } from '@/shared/api/api-legacy';
+import { classroomsApi } from '@/shared/api/api-legacy';
 import type {
+  ChatConversation,
   ClassroomLessonOption,
   ClassroomWorkspacePayload,
   LessonItem,
@@ -44,6 +46,7 @@ import {
   findSectionIdContainingBlock,
   lessonSectionsSorted,
 } from '@/shared/lib/lessonSections';
+import { useApiQuery } from '@/shared/lib/query';
 import { useAppSelector } from '@/shared/lib/storeHooks';
 
 const ClassroomWhiteboardOverlay = lazy(() =>
@@ -113,20 +116,15 @@ export function ClassroomPage() {
   const { t } = useTranslation();
   const me = useAppSelector((s) => s.auth.user);
   const { startPipCall } = useLessonCall();
+  const queryClient = useQueryClient();
+  const workspaceKey = ['classrooms', 'workspace', linkId] as const;
   const [ws, setWs] = useState<ClassroomWorkspacePayload | null>(null);
-  const [loading, setLoading] = useState(true);
   const [preparing, setPreparing] = useState(false);
   const [tab, setTab] = useState<TabKey>('lesson');
   const [activeLessonSection, setActiveLessonSection] =
     useState<string>('overview');
-  const [peerChatUnread, setPeerChatUnread] = useState(0);
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [dockPanel, setDockPanel] = useState<DockPanelKey | null>(null);
-  const [lessonDetail, setLessonDetail] = useState<LessonItem | null>(null);
-  const [lessonLoading, setLessonLoading] = useState(false);
-  const [classroomLessonOptions, setClassroomLessonOptions] = useState<
-    ClassroomLessonOption[]
-  >([]);
   const studentFocusSerialRef = useRef(0);
   const wsRef = useRef(ws);
   wsRef.current = ws;
@@ -134,33 +132,35 @@ export function ClassroomPage() {
   const userClearedLessonRef = useRef(false);
   const autoPinLessonAttemptedRef = useRef(false);
 
-  const load = useCallback(async () => {
-    const { data } = await classroomsApi.workspace(linkId);
-    setWs(data);
-  }, [linkId]);
+  const workspaceQuery = useApiQuery<ClassroomWorkspacePayload>({
+    queryKey: workspaceKey,
+    url: `/me/classrooms/${linkId}`,
+    enabled: Number.isFinite(linkId),
+    refetchInterval:
+      tab === 'lesson' && ws?.asTeacher === false ? 45000 : false,
+  });
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!Number.isFinite(linkId)) {
-        toast.error(t('classroom.invalid'));
-        setLoading(false);
-        return;
-      }
-      try {
-        const { data } = await classroomsApi.workspace(linkId);
-        if (!cancelled) setWs(data);
-      } catch (err) {
-        if (!cancelled)
-          toast.error(getApiErrorMessage(err) || t('classroom.loadFailed'));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    if (workspaceQuery.data) setWs(workspaceQuery.data);
+  }, [workspaceQuery.data]);
+
+  useEffect(() => {
+    if (workspaceQuery.isLoadingError)
+      toast.error(
+        getApiErrorMessage(workspaceQuery.error) || t('classroom.loadFailed'),
+      );
+  }, [workspaceQuery.isLoadingError, workspaceQuery.error, t]);
+
+  useEffect(() => {
+    if (!Number.isFinite(linkId)) toast.error(t('classroom.invalid'));
   }, [linkId, t]);
+
+  const loading = workspaceQuery.isLoading;
+
+  const load = useCallback(async () => {
+    const result = await workspaceQuery.refetch();
+    if (result.data) setWs(result.data);
+  }, [workspaceQuery]);
 
   useEffect(() => {
     if (Number.isFinite(linkId)) {
@@ -168,32 +168,29 @@ export function ClassroomPage() {
     }
   }, [linkId]);
 
-  const refreshPeerUnread = useCallback(async () => {
-    if (!ws?.peer?.id) return;
-    try {
-      const { data } = await chatApi.conversations();
-      const row = (Array.isArray(data) ? data : []).find(
-        (c) => c.peer?.id === ws.peer.id,
-      );
-      setPeerChatUnread(row?.unreadCount ?? 0);
-    } catch {
-      setPeerChatUnread(0);
-    }
-  }, [ws?.peer?.id]);
-
-  useEffect(() => {
-    void refreshPeerUnread();
-    const id = window.setInterval(() => void refreshPeerUnread(), 20000);
-    return () => window.clearInterval(id);
-  }, [refreshPeerUnread]);
+  const conversationsQuery = useApiQuery<ChatConversation[]>({
+    queryKey: ['chat', 'conversations'],
+    url: '/chat/conversations',
+    enabled: ws?.peer?.id != null,
+    refetchInterval: 20000,
+  });
+  const peerChatUnread = useMemo(() => {
+    const peerUserId = ws?.peer?.id;
+    if (peerUserId == null) return 0;
+    const rows = conversationsQuery.data ?? [];
+    return rows.find((c) => c.peer?.id === peerUserId)?.unreadCount ?? 0;
+  }, [conversationsQuery.data, ws?.peer?.id]);
 
   useEffect(() => {
     const onVis = () => {
-      if (document.visibilityState === 'visible') void refreshPeerUnread();
+      if (document.visibilityState === 'visible')
+        void queryClient.invalidateQueries({
+          queryKey: ['chat', 'conversations'],
+        });
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, [refreshPeerUnread]);
+  }, [queryClient]);
 
   useEffect(() => {
     if (!dockPanel) return;
@@ -204,48 +201,32 @@ export function ClassroomPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [dockPanel]);
 
-  useEffect(() => {
-    const lid = ws?.activeLessonId;
-    if (!lid) {
-      setLessonDetail(null);
-      return;
-    }
-    let cancelled = false;
-    setLessonLoading(true);
-    (async () => {
-      try {
-        const { data } = await lessonsApi.getLesson(lid, {
-          params: { classroomLinkId: linkId },
-        });
-        if (!cancelled) setLessonDetail(data);
-      } catch {
-        if (!cancelled) {
-          setLessonDetail(null);
-          toast.error(t('classroom.shell.lessonLoadFailed'));
-        }
-      } finally {
-        if (!cancelled) setLessonLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [ws?.activeLessonId, t, linkId]);
-
-  const refreshClassroomLessonOptions = useCallback(async () => {
-    if (!Number.isFinite(linkId)) return;
-    try {
-      const { data } = await classroomsApi.eligibleLessons(linkId);
-      setClassroomLessonOptions(Array.isArray(data) ? data : []);
-    } catch {
-      setClassroomLessonOptions([]);
-    }
-  }, [linkId]);
+  const activeLessonId = ws?.activeLessonId ?? null;
+  const lessonDetailQuery = useApiQuery<LessonItem>({
+    queryKey: ['lessons', activeLessonId, 'classroom', linkId],
+    url: `/lessons/${activeLessonId}`,
+    config: { params: { classroomLinkId: linkId } },
+    enabled: activeLessonId != null,
+  });
+  const lessonDetail =
+    activeLessonId != null ? (lessonDetailQuery.data ?? null) : null;
+  const lessonLoading = activeLessonId != null && lessonDetailQuery.isLoading;
 
   useEffect(() => {
-    if (ws == null) return;
-    void refreshClassroomLessonOptions();
-  }, [ws?.asTeacher, linkId, refreshClassroomLessonOptions]);
+    if (lessonDetailQuery.isError)
+      toast.error(t('classroom.shell.lessonLoadFailed'));
+  }, [lessonDetailQuery.isError, t]);
+
+  const eligibleLessonsQuery = useApiQuery<ClassroomLessonOption[]>({
+    queryKey: ['classrooms', 'eligible-lessons', linkId, ws?.asTeacher],
+    url: `/me/classrooms/${linkId}/eligible-lessons`,
+    enabled: Number.isFinite(linkId) && ws != null,
+  });
+  const classroomLessonOptions = useMemo(
+    () =>
+      Array.isArray(eligibleLessonsQuery.data) ? eligibleLessonsQuery.data : [],
+    [eligibleLessonsQuery.data],
+  );
 
   useEffect(() => {
     if (tab !== 'lesson') return undefined;
@@ -290,16 +271,6 @@ export function ClassroomPage() {
     }, 650);
     return () => window.clearInterval(id);
   }, [tab, linkId, load]);
-
-  useEffect(() => {
-    if (tab !== 'lesson') return undefined;
-    const id = window.setInterval(() => {
-      const cur = wsRef.current;
-      if (!cur || cur.asTeacher) return;
-      void load();
-    }, 45000);
-    return () => window.clearInterval(id);
-  }, [tab, load]);
 
   useEffect(() => {
     if (!ws || ws.asTeacher) return;
@@ -367,6 +338,7 @@ export function ClassroomPage() {
           lessonSectionId,
         });
         setWs(data);
+        queryClient.setQueryData(workspaceKey, data);
       } catch (err) {
         toast.error(
           getApiErrorMessage(err) || t('classroom.shell.focusPushFailed'),
@@ -468,6 +440,7 @@ export function ClassroomPage() {
           lessonId: pick.id,
         });
         setWs(data);
+        queryClient.setQueryData(workspaceKey, data);
       } catch (err) {
         toast.error(
           getApiErrorMessage(err) || t('classroom.shell.lessonPickFailed'),
@@ -607,7 +580,11 @@ export function ClassroomPage() {
               to={`/messages/${peer.id}`}
               className={toolBtnBase}
               aria-label={t('chat.open')}
-              onClick={() => void refreshPeerUnread()}
+              onClick={() =>
+                void queryClient.invalidateQueries({
+                  queryKey: ['chat', 'conversations'],
+                })
+              }
             >
               <MessageCircle size={22} strokeWidth={2} aria-hidden />
               {peerChatUnread > 0 && (
@@ -755,6 +732,7 @@ export function ClassroomPage() {
                                   lessonId,
                                 });
                               setWs(data);
+                              queryClient.setQueryData(workspaceKey, data);
                             } catch (err) {
                               toast.error(
                                 getApiErrorMessage(err) ||
@@ -814,6 +792,7 @@ export function ClassroomPage() {
                                   lessonId,
                                 });
                               setWs(data);
+                              queryClient.setQueryData(workspaceKey, data);
                             } catch (err) {
                               toast.error(
                                 getApiErrorMessage(err) ||
