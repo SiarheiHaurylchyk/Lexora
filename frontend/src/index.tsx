@@ -1,3 +1,5 @@
+import './app/globalUtils';
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
@@ -8,7 +10,6 @@ import App from './App';
 
 import './index.css';
 
-import './app/globalUtils';
 import './shared/config/i18n/config';
 
 const root = ReactDOM.createRoot(

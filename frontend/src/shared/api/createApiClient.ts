@@ -28,12 +28,17 @@ export type ApiClient = {
 
 export const createApiClient = (
   config: AxiosRequestConfig = {},
-  defaultOptions?: { withCredentials?: boolean },
+  defaultOptions?: {
+    withCredentials?: boolean;
+    axiosInstance?: AxiosInstance;
+  },
 ): ApiClient => {
-  const instance = axios.create({
-    ...config,
-    withCredentials: defaultOptions?.withCredentials ?? true,
-  });
+  const instance =
+    defaultOptions?.axiosInstance ??
+    axios.create({
+      ...config,
+      withCredentials: defaultOptions?.withCredentials ?? true,
+    });
 
   const mutation =
     <InputType, OutputType>(requestType?: RequestType) =>

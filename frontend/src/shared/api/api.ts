@@ -1,18 +1,17 @@
 import { env } from '../config/env';
 
+import { api } from './api-legacy';
 import {
   createApiClient,
   QueryInputType,
   RequestType,
 } from './createApiClient';
 
-const {
-  instance: $api,
-  mutation,
-  query,
-} = createApiClient(
+export const $api = api;
+
+const { mutation, query } = createApiClient(
   { baseURL: env.NEXT_PUBLIC_API_URL },
-  { withCredentials: true },
+  { axiosInstance: api },
 );
 
-export { $api, mutation, query, type QueryInputType, RequestType };
+export { mutation, query, type QueryInputType, RequestType };
