@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Button,
   PageHeader,
@@ -15,7 +16,7 @@ import { AddBlockMenu } from '@/features/AddBlockMenu';
 import { LessonBlockEditor } from '@/features/LessonBlockEditor';
 import { LessonHomeworkPanel } from '@/features/LessonHomeworkPanel';
 
-import { lessonsApi, studentsApi } from '@/shared/api/api-legacy';
+import { lessonsApi } from '@/shared/api/api-legacy';
 import type {
   LessonBlockItem,
   LessonBlockType,
@@ -30,6 +31,7 @@ import {
   flattenLessonBlocks,
   lessonSectionsSorted,
 } from '@/shared/lib/lessonSections';
+import { useApiQuery } from '@/shared/lib/query';
 
 const wideShellClasses = tw`box-border w-full pt-10 pb-12`;
 
@@ -40,9 +42,21 @@ export function LessonEditPage() {
   const navigate = useNavigate();
   const lessonId = Number(id);
 
+  const queryClient = useQueryClient();
+  const lessonKey = ['lessons', lessonId] as const;
+
+  const lessonQuery = useApiQuery<LessonItem>({
+    queryKey: lessonKey,
+    url: `/lessons/${lessonId}`,
+    enabled: Number.isFinite(lessonId),
+  });
+  const studentsQuery = useApiQuery<StudentLink[]>({
+    queryKey: ['students', 'my-students'],
+    url: '/students/my-students',
+  });
+  const students = studentsQuery.data ?? [];
+
   const [lesson, setLesson] = useState<LessonItem | null>(null);
-  const [students, setStudents] = useState<StudentLink[]>([]);
-  const [loading, setLoading] = useState(true);
   const [savingMeta, setSavingMeta] = useState(false);
   const [savingBlockId, setSavingBlockId] = useState<number | null>(null);
   const [creatingDeck, setCreatingDeck] = useState(false);
@@ -54,36 +68,30 @@ export function LessonEditPage() {
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [studentId, setStudentId] = useState<number | ''>('');
+  const draftsInitializedRef = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [lessonRes, studentsRes] = await Promise.all([
-          lessonsApi.getLesson(lessonId),
-          studentsApi
-            .getMyStudents()
-            .catch(() => ({ data: [] as StudentLink[] })),
-        ]);
-        if (cancelled) return;
-        setLesson(lessonRes.data);
-        setTitle(lessonRes.data.title);
-        setSummary(lessonRes.data.summary || '');
-        setStudentId(lessonRes.data.student?.id ?? '');
-        setStudents(studentsRes.data);
-      } catch {
-        if (!cancelled) {
-          toast.error(t('lessons.notFound'));
-          navigate('/lessons');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [lessonId, navigate, t]);
+    const data = lessonQuery.data;
+    if (!data) return;
+    setLesson(data);
+    if (!draftsInitializedRef.current) {
+      setTitle(data.title);
+      setSummary(data.summary || '');
+      setStudentId(data.student?.id ?? '');
+      draftsInitializedRef.current = true;
+    }
+  }, [lessonQuery.data]);
+
+  useEffect(() => {
+    if (lessonQuery.isLoadingError) {
+      toast.error(t('lessons.notFound'));
+      navigate('/lessons');
+    }
+  }, [lessonQuery.isLoadingError, navigate, t]);
+
+  const loading = lessonQuery.isLoading;
+  const invalidateLesson = () =>
+    queryClient.invalidateQueries({ queryKey: lessonKey });
 
   useEffect(() => {
     if (!lesson?.sections?.length) {
@@ -110,6 +118,7 @@ export function LessonEditPage() {
         studentId: studentId === '' ? null : studentId,
       });
       setLesson(data);
+      void invalidateLesson();
       toast.success(t('lessons.savedToast'));
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('lessons.saveFailed'));
@@ -163,6 +172,7 @@ export function LessonEditPage() {
         },
       );
       setLesson(data);
+      void invalidateLesson();
       toast.success(t('lessons.savedToast'));
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('lessons.saveFailed'));
@@ -192,6 +202,7 @@ export function LessonEditPage() {
       ]);
       const { data } = await lessonsApi.getLesson(lessonId);
       setLesson(data);
+      void invalidateLesson();
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('lessons.saveFailed'));
     }
@@ -213,6 +224,7 @@ export function LessonEditPage() {
         section.id,
       );
       setLesson(data);
+      void invalidateLesson();
       toast.success(t('lesson.sectionDeleted'));
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('lesson.sectionDeleteFailed'));
@@ -238,6 +250,7 @@ export function LessonEditPage() {
             : s,
         ),
       });
+      void invalidateLesson();
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('lesson.addFailed'));
     }
@@ -273,6 +286,7 @@ export function LessonEditPage() {
             : s,
         ),
       });
+      void invalidateLesson();
       toast.success(t('lesson.blockSaved'));
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('lesson.saveFailed'));
@@ -304,6 +318,7 @@ export function LessonEditPage() {
             : s,
         ),
       });
+      void invalidateLesson();
       toast.success(t('lesson.blockDeleted'));
     } catch (err) {
       toast.error(getApiErrorMessage(err) || t('lesson.deleteFailed'));
@@ -351,6 +366,7 @@ export function LessonEditPage() {
           sectionId,
         }),
       ]);
+      void invalidateLesson();
     } catch {
       toast.error(t('lesson.saveFailed'));
     }

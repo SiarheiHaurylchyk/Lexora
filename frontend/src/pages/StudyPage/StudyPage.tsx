@@ -10,9 +10,10 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { deckApi, studyApi } from '@/shared/api/api-legacy';
+import { studyApi } from '@/shared/api/api-legacy';
 import type { CardItem, DeckItem } from '@/shared/api/types';
 import { useSpeech } from '@/shared/hooks/useSpeech';
+import { useApiQuery } from '@/shared/lib/query';
 
 interface ModeResult {
   cardId: number;
@@ -847,46 +848,53 @@ export function StudyPage() {
   const { t } = useTranslation();
   const { id, mode } = useParams<{ id: string; mode: string }>();
   const navigate = useNavigate();
-  const [deck, setDeck] = useState<DeckItem | null>(null);
+  const deckId = Number(id);
   const [cards, setCards] = useState<CardItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [phase, setPhase] = useState<'study' | 'result'>('study');
   const [results, setResults] = useState<ModeResult[]>([]);
   const [retryKey, setRetryKey] = useState(0);
 
+  const deckQuery = useApiQuery<DeckItem>({
+    queryKey: ['deck', deckId, 'study', retryKey],
+    url: `/decks/${deckId}`,
+    enabled: Number.isFinite(deckId),
+  });
+  const deck = deckQuery.data ?? null;
+  const loading = deckQuery.isLoading || sessionId === null;
+
   useEffect(() => {
+    const data = deckQuery.data;
+    if (!data) return;
+    if (!data.cards?.length) {
+      toast.error(t('study.noCards'));
+      navigate(`/decks/${id}`);
+      return;
+    }
+    setCards([...data.cards].sort(() => Math.random() - 0.5));
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await deckApi.getDeck(Number(id));
-        if (cancelled) return;
-        if (!data.cards?.length) {
-          toast.error(t('study.noCards'));
-          navigate(`/decks/${id}`);
-          return;
-        }
-        const shuffled = [...data.cards].sort(() => Math.random() - 0.5);
-        setDeck(data);
-        setCards(shuffled);
-        const { data: session } = await studyApi.startSession(
-          Number(id),
-          mode!,
-        );
+        const { data: session } = await studyApi.startSession(deckId, mode!);
         if (!cancelled) setSessionId(session.id);
       } catch {
         if (!cancelled) {
           toast.error(t('study.sessionFailed'));
           navigate(`/decks/${id}`);
         }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [id, mode, navigate, retryKey, t]);
+  }, [deckQuery.data, deckId, mode, navigate, id, t]);
+
+  useEffect(() => {
+    if (deckQuery.isError) {
+      toast.error(t('study.sessionFailed'));
+      navigate(`/decks/${id}`);
+    }
+  }, [deckQuery.isError, navigate, id, t]);
 
   const handleComplete = async (modeResults: ModeResult[]) => {
     setResults(modeResults);
@@ -902,6 +910,7 @@ export function StudyPage() {
 
   const handleRetry = () => {
     setPhase('study');
+    setSessionId(null);
     setRetryKey((k) => k + 1);
   };
 
