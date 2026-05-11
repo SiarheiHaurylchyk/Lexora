@@ -14,6 +14,9 @@ frontend/dist/
 frontend/.vite/
 *.tsbuildinfo
 
+# --- AI tools ---
+.claude
+
 # --- Build & tooling (backend / Java · Maven) ---
 backend/target/
 *.class
