@@ -1,11 +1,11 @@
+/* eslint-disable simple-import-sort/imports -- Entry order: globalUtils (tw/cn) and stores (API auth) before App’s module graph. */
 import './app/globalUtils';
+import './shared/stores/authStore';
+import './shared/stores/settingsStore';
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { Provider } from 'react-redux';
 
-// eslint-disable-next-line fsd/no-global-store-imports -- bootstrap mounts the Redux Provider, so a direct store import is required here.
-import { store } from './app/store';
 import App from './App';
 
 import './index.css';
@@ -17,8 +17,6 @@ const root = ReactDOM.createRoot(
 );
 root.render(
   <React.StrictMode>
-    <Provider store={store}>
-      <App />
-    </Provider>
+    <App />
   </React.StrictMode>,
 );

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { authApi } from '@/shared/api/api-legacy';
 import { updateUser } from '@/shared/lib/storeActions';
-import { useAppDispatch, useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 /**
  * Avatar picker for the Settings page.
@@ -19,8 +19,7 @@ const previewBase = tw`w-24 h-24 rounded-full object-cover bg-bg3 border-2 borde
 
 export function AvatarUpload() {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
@@ -39,7 +38,7 @@ export function AvatarUpload() {
     try {
       const dataUrl = await fileToSquareDataUrl(file, SIZE);
       const { data } = await authApi.patchProfile({ avatarUrl: dataUrl });
-      dispatch(updateUser(data));
+      updateUser(data);
       toast.success(t('settings.avatar.saved'));
     } catch {
       toast.error(t('settings.avatar.failed'));
@@ -54,7 +53,7 @@ export function AvatarUpload() {
     setBusy(true);
     try {
       const { data } = await authApi.patchProfile({ avatarUrl: '' });
-      dispatch(updateUser(data));
+      updateUser(data);
       toast.success(t('settings.avatar.removed'));
     } catch {
       toast.error(t('settings.avatar.failed'));

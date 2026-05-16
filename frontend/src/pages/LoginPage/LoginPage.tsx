@@ -9,14 +9,12 @@ import { LanguageSwitcher } from '@/widgets/LanguageSwitcher';
 import { authApi } from '@/shared/api/api-legacy';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { setCredentials } from '@/shared/lib/storeActions';
-import { useAppDispatch } from '@/shared/lib/storeHooks';
 
 const labelClasses = tw`mb-1.5 block text-[13px] font-medium text-text2`;
 
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const [form, setForm] = useState({ usernameOrEmail: '', password: '' });
   const [loading, setLoading] = useState(false);
 
@@ -25,13 +23,11 @@ export function LoginPage() {
     setLoading(true);
     try {
       const { data } = await authApi.login(form);
-      dispatch(
-        setCredentials({
-          user: data.user,
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-        }),
-      );
+      setCredentials({
+        user: data.user,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+      });
       toast.success(
         t('auth.welcomeBack', {
           name: data.user.displayName || data.user.username,

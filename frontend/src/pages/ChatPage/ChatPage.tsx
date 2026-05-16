@@ -11,7 +11,7 @@ import type { ChatMessage, ChatThread } from '@/shared/api/types';
 import { useAuthenticatedBlobUrl } from '@/shared/hooks/useAuthenticatedBlobUrl';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const POLL_MS = 5000;
 
@@ -107,7 +107,7 @@ export function ChatPage() {
   const { peerId: peerIdParam } = useParams<{ peerId: string }>();
   const navigate = useNavigate();
   const inHub = Boolean(useMatch('/messages/:peerId'));
-  const myId = useAppSelector((s) => s.auth.user?.id);
+  const myId = useAuthStore((s) => s.user?.id);
 
   const peerId = Number(peerIdParam);
   const queryClient = useQueryClient();

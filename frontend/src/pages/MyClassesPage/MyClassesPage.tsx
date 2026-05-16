@@ -9,7 +9,7 @@ import { ClassCard } from '@/entities/Classroom';
 import type { StudentLink } from '@/shared/api/types';
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const gridClasses = tw`grid gap-[22px] grid-cols-3 max-[1100px]:grid-cols-2 max-[640px]:grid-cols-1`;
 
@@ -30,7 +30,7 @@ function matchesQuery(link: StudentLink, q: string): boolean {
  */
 export function MyClassesPage() {
   const { t } = useTranslation();
-  const me = useAppSelector((s) => s.auth.user);
+  const me = useAuthStore((s) => s.user);
   const canTeach = userCanTeach(me?.role);
   const [q, setQ] = useState('');
   const [qDebounced, setQDebounced] = useState('');

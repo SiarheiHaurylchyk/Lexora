@@ -20,7 +20,7 @@ import {
 
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { logout } from '@/shared/lib/storeActions';
-import { useAppDispatch, useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 interface UserMenuProps {
   /** Top bar: avatar-only trigger; menu opens below. */
@@ -40,8 +40,7 @@ const itemDanger = tw`text-danger hover:bg-[rgba(239,68,68,0.08)]`;
 export function UserMenu({ placement }: UserMenuProps) {
   const isHeader = placement === 'header';
   const { t } = useTranslation();
-  const user = useAppSelector((s) => s.auth.user);
-  const dispatch = useAppDispatch();
+  const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -69,7 +68,6 @@ export function UserMenu({ placement }: UserMenuProps) {
 
   useLayoutEffect(() => {
     if (!open) {
-      setMenuStyle(null);
       return undefined;
     }
     updateMenuPosition();
@@ -112,7 +110,7 @@ export function UserMenu({ placement }: UserMenuProps) {
 
   const handleLogout = () => {
     setOpen(false);
-    dispatch(logout());
+    logout();
     navigate('/');
   };
 

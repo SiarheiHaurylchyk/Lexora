@@ -46,8 +46,8 @@ import type {
 } from './types';
 
 /**
- * Auth-bridge — wired up from `app/store` via `configureLegacyApiAuth` so the
- * shared/ layer does not have to import from app/.
+ * Auth-bridge — wired up from `shared/stores/authStore` via
+ * `configureLegacyApiAuth` so axios stays decoupled from React.
  */
 interface TokenPair {
   accessToken: string;

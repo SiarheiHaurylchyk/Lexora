@@ -15,7 +15,7 @@ import { userCanTeach } from '@/shared/lib/accountRole';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { useConfirm } from '@/shared/lib/confirm';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 /**
  * StudentsPage — page where the user manages teacher / student relationships.
@@ -28,7 +28,7 @@ export function StudentsPage() {
   const { t } = useTranslation();
   const confirm = useConfirm();
   const navigate = useNavigate();
-  const me = useAppSelector((s) => s.auth.user);
+  const me = useAuthStore((s) => s.user);
   const canTeach = userCanTeach(me?.role);
   const [showAdd, setShowAdd] = useState(false);
   const [notesDraft, setNotesDraft] = useState<Record<number, string>>({});

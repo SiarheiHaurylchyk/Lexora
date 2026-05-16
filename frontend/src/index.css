@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+@import 'https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap';
 @import 'tailwindcss';
 
 @theme {
@@ -6,99 +6,99 @@
   --color-brand-light: #8b5cf6;
   --color-brand-dim: #ede9fe;
   --color-brand-dark: #5b21b6;
-
   --color-accent: #06b6d4;
   --color-accent-dim: #cffafe;
-
   --color-success: #10b981;
   --color-success-dim: #d1fae5;
   --color-warning: #f59e0b;
   --color-warning-dim: #fef3c7;
   --color-danger: #ef4444;
   --color-danger-dim: #fee2e2;
-
   --color-bg: #0f0f13;
   --color-bg2: #17171e;
   --color-bg3: #1e1e28;
   --color-bg4: #252532;
   --color-surface: #1e1e28;
   --color-surface2: #252532;
-
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-border2: rgba(255, 255, 255, 0.12);
-
+  --color-border: rgb(255 255 255 / 7%);
+  --color-border2: rgb(255 255 255 / 12%);
   --color-text: #f4f4f8;
   --color-text2: #a0a0b8;
   --color-text3: #6b6b85;
-
   --font-display: 'Syne', sans-serif;
   --font-body: 'DM Sans', sans-serif;
-
   --radius: 12px;
   --radius-lg: 20px;
   --radius-xl: 28px;
-
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --shadow-brand: 0 8px 32px rgba(124, 58, 237, 0.3);
-
+  --shadow: 0 4px 24px rgb(0 0 0 / 40%);
+  --shadow-brand: 0 8px 32px rgb(124 58 237 / 30%);
   --breakpoint-sm: 640px;
   --breakpoint-md: 720px;
   --breakpoint-lg: 820px;
   --breakpoint-xl: 1100px;
-
-  --animate-fade: fadeIn 0.4s ease both;
-  --animate-scale: scaleIn 0.3s ease both;
+  --animate-fade: fadein 0.4s ease both;
+  --animate-scale: scalein 0.3s ease both;
   --animate-shimmer: shimmer 1.5s infinite;
   --animate-pulse-soft: pulse 2s ease-in-out infinite;
   --animate-spin-slow: spin 1s linear infinite;
-  --animate-scroll-x: scrollX 20s linear infinite;
+  --animate-scroll-x: scrollx 20s linear infinite;
 
   @keyframes fadeIn {
     from {
       opacity: 0;
       transform: translateY(10px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
     }
   }
+
   @keyframes scaleIn {
     from {
       opacity: 0;
       transform: scale(0.95);
     }
+
     to {
       opacity: 1;
       transform: scale(1);
     }
   }
+
   @keyframes pulse {
     0%,
     100% {
       opacity: 1;
     }
+
     50% {
       opacity: 0.5;
     }
   }
+
   @keyframes spin {
     to {
       transform: rotate(360deg);
     }
   }
+
   @keyframes shimmer {
     0% {
       background-position: -200% 0;
     }
+
     100% {
       background-position: 200% 0;
     }
   }
+
   @keyframes scrollX {
     from {
       transform: translateX(0);
     }
+
     to {
       transform: translateX(-50%);
     }
@@ -123,29 +123,24 @@
   --warning-dim: #fef3c7;
   --danger: #ef4444;
   --danger-dim: #fee2e2;
-
   --bg: #0f0f13;
   --bg2: #17171e;
   --bg3: #1e1e28;
   --bg4: #252532;
   --surface: #1e1e28;
   --surface2: #252532;
-  --border: rgba(255, 255, 255, 0.07);
-  --border2: rgba(255, 255, 255, 0.12);
-
+  --border: rgb(255 255 255 / 7%);
+  --border2: rgb(255 255 255 / 12%);
   --text: #f4f4f8;
   --text2: #a0a0b8;
   --text3: #6b6b85;
-
   --font-display: 'Syne', sans-serif;
   --font-body: 'DM Sans', sans-serif;
-
   --radius: 12px;
   --radius-lg: 20px;
   --radius-xl: 28px;
-
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --shadow-brand: 0 8px 32px rgba(124, 58, 237, 0.3);
+  --shadow: 0 4px 24px rgb(0 0 0 / 40%);
+  --shadow-brand: 0 8px 32px rgb(124 58 237 / 30%);
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -154,22 +149,22 @@
   *::before,
   *::after {
     box-sizing: border-box;
-    margin: 0;
     padding: 0;
+    margin: 0;
   }
 
   html {
-    font-size: 16px;
     scroll-behavior: smooth;
+    font-size: 16px;
   }
 
   body {
-    font-family: var(--font-body);
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    font-family: var(--font-body);
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
   }
 
   h1,
@@ -189,11 +184,11 @@
 
   button {
     font-family: var(--font-body);
+    color: inherit;
     cursor: pointer;
-    border: none;
     outline: none;
     background: none;
-    color: inherit;
+    border: none;
     transition: var(--transition);
   }
 
@@ -212,13 +207,16 @@
   ::-webkit-scrollbar {
     width: 6px;
   }
+
   ::-webkit-scrollbar-track {
     background: var(--bg2);
   }
+
   ::-webkit-scrollbar-thumb {
     background: var(--bg4);
     border-radius: 3px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background: var(--border2);
   }
@@ -227,78 +225,92 @@
 @layer components {
   .btn {
     display: inline-flex;
-    align-items: center;
     gap: 8px;
+    align-items: center;
     padding: 10px 20px;
-    border-radius: var(--radius);
+    font-family: var(--font-body);
     font-size: 14px;
     font-weight: 500;
-    transition: var(--transition);
-    cursor: pointer;
     white-space: nowrap;
-    font-family: var(--font-body);
+    cursor: pointer;
+    border-radius: var(--radius);
+    transition: var(--transition);
   }
+
   .btn-primary {
-    background: var(--brand);
     color: #fff;
+    background: var(--brand);
     box-shadow: var(--shadow-brand);
   }
+
   .btn-primary:hover {
     background: var(--brand-light);
     transform: translateY(-1px);
   }
+
   .btn-primary:active {
     transform: translateY(0);
   }
+
   .btn-secondary {
-    background: var(--surface2);
     color: var(--text);
+    background: var(--surface2);
     border: 1px solid var(--border2);
   }
+
   .btn-secondary:hover {
     background: var(--bg4);
     border-color: var(--brand);
   }
+
   .btn-ghost {
-    background: transparent;
     color: var(--text2);
+    background: transparent;
   }
+
   .btn-ghost:hover {
-    background: var(--surface);
     color: var(--text);
+    background: var(--surface);
   }
+
   .btn-danger {
-    background: var(--danger);
     color: #fff;
+    background: var(--danger);
   }
+
   .btn-danger:hover {
     opacity: 0.9;
   }
+
   .btn-sm {
     padding: 6px 14px;
     font-size: 13px;
     border-radius: 8px;
   }
+
   .btn-lg {
     padding: 14px 28px;
     font-size: 16px;
     border-radius: 14px;
   }
+
   .btn-icon {
     padding: 8px;
     border-radius: 8px;
   }
+
   .btn:disabled {
-    opacity: 0.6;
     cursor: not-allowed;
+    opacity: 0.6;
   }
 
   .card {
+    padding: 24px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 24px;
   }
+
   .card:hover {
     border-color: var(--border2);
   }
@@ -306,50 +318,57 @@
   .input-field {
     width: 100%;
     padding: 12px 16px;
+    font-size: 15px;
+    color: var(--text);
     background: var(--bg3);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    color: var(--text);
-    font-size: 15px;
     transition: var(--transition);
   }
+
   .input-field:focus {
     border-color: var(--brand);
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    box-shadow: 0 0 0 3px rgb(124 58 237 / 15%);
   }
+
   .input-field::placeholder {
     color: var(--text3);
   }
 
   .badge {
     display: inline-flex;
-    align-items: center;
     gap: 4px;
+    align-items: center;
     padding: 3px 10px;
-    border-radius: 100px;
     font-size: 12px;
     font-weight: 500;
+    border-radius: 100px;
   }
+
   .badge-brand {
-    background: var(--brand-dim);
     color: var(--brand);
+    background: var(--brand-dim);
   }
+
   .badge-success {
-    background: var(--success-dim);
     color: var(--success);
+    background: var(--success-dim);
   }
+
   .badge-warning {
-    background: var(--warning-dim);
     color: var(--warning);
+    background: var(--warning-dim);
   }
+
   .badge-danger {
-    background: var(--danger-dim);
     color: var(--danger);
+    background: var(--danger-dim);
   }
 
   .animate-fade {
     animation: fadeIn 0.4s ease both;
   }
+
   .animate-scale {
     animation: scaleIn 0.3s ease both;
   }
@@ -362,17 +381,18 @@
       var(--bg3) 75%
     );
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
     border-radius: 8px;
+    animation: shimmer 1.5s infinite;
   }
 
   .progress-bar {
     width: 100%;
     height: 6px;
+    overflow: hidden;
     background: var(--bg4);
     border-radius: 3px;
-    overflow: hidden;
   }
+
   .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--brand), var(--accent));

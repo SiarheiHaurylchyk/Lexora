@@ -1,10 +1,11 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
 import { authApi } from '@/shared/api/api-legacy';
 import { updateUser } from '@/shared/lib/storeActions';
-import { useAppDispatch, useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
+import type { User } from '@/shared/types';
 
 interface CertDraft {
   title: string;
@@ -27,52 +28,64 @@ const sectionTitleClasses = tw`mt-7 mb-1 font-display text-lg`;
 const helpClasses = tw`mb-3 text-[13px] text-text3`;
 const checkRowClasses = tw`mt-3 flex items-center gap-2 text-sm`;
 
-export function TeacherProfileForm() {
+/** Stable key when server-side teacher fields change (remount form drafts). */
+function teacherProfileRemoteKey(user: User): string {
+  return JSON.stringify({
+    id: user.id,
+    teacherHeadline: user.teacherHeadline ?? '',
+    teacherBio: user.teacherBio ?? '',
+    teacherResume: user.teacherResume ?? '',
+    teacherIntroVideoUrl: user.teacherIntroVideoUrl ?? '',
+    hourlyRate: user.hourlyRate ?? null,
+    teachesLanguages: user.teachesLanguages ?? '',
+    showInTeacherDirectory: user.showInTeacherDirectory ?? null,
+    teacherCancellationPolicy: user.teacherCancellationPolicy ?? '',
+    teacherPaymentInfo: user.teacherPaymentInfo ?? '',
+    offersTrialLesson: user.offersTrialLesson ?? null,
+    teacherCertificates: user.teacherCertificates ?? [],
+  });
+}
+
+function certsFromUser(user: User): CertDraft[] {
+  const loaded = user.teacherCertificates;
+  if (loaded && loaded.length > 0) {
+    return loaded.map((c) => ({
+      title: c.title ?? '',
+      issuer: c.issuer ?? '',
+      year: c.year ?? '',
+      description: c.description ?? '',
+      documentUrl: c.documentUrl ?? '',
+    }));
+  }
+  return [emptyCert()];
+}
+
+function TeacherProfileFormInner({ user }: { user: User }) {
   const { t } = useTranslation();
-  const user = useAppSelector((s) => s.auth.user);
-  const dispatch = useAppDispatch();
   const [saving, setSaving] = useState(false);
-  const [headline, setHeadline] = useState('');
-  const [bio, setBio] = useState('');
-  const [resume, setResume] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [rate, setRate] = useState('');
-  const [langs, setLangs] = useState('');
-  const [visible, setVisible] = useState(true);
-  const [cancellationPolicy, setCancellationPolicy] = useState('');
-  const [paymentInfo, setPaymentInfo] = useState('');
-  const [offersTrial, setOffersTrial] = useState(false);
-  const [certs, setCerts] = useState<CertDraft[]>([emptyCert()]);
-
-  useEffect(() => {
-    if (!user) return;
-    setHeadline(user.teacherHeadline ?? '');
-    setBio(user.teacherBio ?? '');
-    setResume(user.teacherResume ?? '');
-    setVideoUrl(user.teacherIntroVideoUrl ?? '');
-    setRate(user.hourlyRate != null ? String(user.hourlyRate) : '');
-    setLangs(user.teachesLanguages ?? '');
-    setVisible(user.showInTeacherDirectory !== false);
-    setCancellationPolicy(user.teacherCancellationPolicy ?? '');
-    setPaymentInfo(user.teacherPaymentInfo ?? '');
-    setOffersTrial(user.offersTrialLesson === true);
-    const loaded = user.teacherCertificates;
-    if (loaded && loaded.length > 0) {
-      setCerts(
-        loaded.map((c) => ({
-          title: c.title ?? '',
-          issuer: c.issuer ?? '',
-          year: c.year ?? '',
-          description: c.description ?? '',
-          documentUrl: c.documentUrl ?? '',
-        })),
-      );
-    } else {
-      setCerts([emptyCert()]);
-    }
-  }, [user]);
-
-  if (!user) return null;
+  const [headline, setHeadline] = useState(() => user.teacherHeadline ?? '');
+  const [bio, setBio] = useState(() => user.teacherBio ?? '');
+  const [resume, setResume] = useState(() => user.teacherResume ?? '');
+  const [videoUrl, setVideoUrl] = useState(
+    () => user.teacherIntroVideoUrl ?? '',
+  );
+  const [rate, setRate] = useState(() =>
+    user.hourlyRate != null ? String(user.hourlyRate) : '',
+  );
+  const [langs, setLangs] = useState(() => user.teachesLanguages ?? '');
+  const [visible, setVisible] = useState(
+    () => user.showInTeacherDirectory !== false,
+  );
+  const [cancellationPolicy, setCancellationPolicy] = useState(
+    () => user.teacherCancellationPolicy ?? '',
+  );
+  const [paymentInfo, setPaymentInfo] = useState(
+    () => user.teacherPaymentInfo ?? '',
+  );
+  const [offersTrial, setOffersTrial] = useState(
+    () => user.offersTrialLesson === true,
+  );
+  const [certs, setCerts] = useState<CertDraft[]>(() => certsFromUser(user));
 
   const updateCert = (index: number, patch: Partial<CertDraft>) => {
     setCerts((prev) =>
@@ -117,7 +130,7 @@ export function TeacherProfileForm() {
         if (!Number.isNaN(rateNum)) payload.hourlyRate = rateNum;
       }
       const { data } = await authApi.patchProfile(payload);
-      dispatch(updateUser(data));
+      updateUser(data);
       toast.success(t('teachers.profileForm.saved'));
     } catch {
       toast.error(t('teachers.profileForm.failed'));
@@ -328,5 +341,13 @@ export function TeacherProfileForm() {
         </button>
       </div>
     </form>
+  );
+}
+
+export function TeacherProfileForm() {
+  const user = useAuthStore((s) => s.user);
+  if (!user) return null;
+  return (
+    <TeacherProfileFormInner key={teacherProfileRemoteKey(user)} user={user} />
   );
 }

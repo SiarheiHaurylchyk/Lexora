@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { authApi } from '@/shared/api/api-legacy';
 import { updateUser } from '@/shared/lib/storeActions';
-import { useAppDispatch, useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const FEATURES = [
   {
@@ -39,8 +39,7 @@ const faqItemBase = tw`border-b border-border px-1 py-3 last:border-b-0 [&_summa
 export function BecomeTeacherPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
   const [busy, setBusy] = useState(false);
 
   if (!user) return null;
@@ -50,7 +49,7 @@ export function BecomeTeacherPage() {
     setBusy(true);
     try {
       const { data } = await authApi.upgradeToTeacher();
-      dispatch(updateUser(data));
+      updateUser(data);
       toast.success(t('become.success'));
       navigate('/settings?tab=teacher');
     } catch {

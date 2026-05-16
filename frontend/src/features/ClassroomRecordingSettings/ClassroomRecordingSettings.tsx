@@ -8,7 +8,7 @@ import type { StudentLink } from '@/shared/api/types';
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const sectionClasses = tw`mb-5 rounded-[20px] border border-border bg-surface p-6`;
 const sectionTitleClasses = tw`mb-1.5 font-display text-xl`;
@@ -19,7 +19,7 @@ const sectionHelpClasses = tw`mb-4 text-sm text-text2`;
  */
 export function ClassroomRecordingSettings() {
   const { t } = useTranslation();
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
   const canTeach = userCanTeach(user?.role);
 
   const linksQuery = useApiQuery<StudentLink[]>({

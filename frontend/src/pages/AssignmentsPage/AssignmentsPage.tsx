@@ -15,14 +15,14 @@ import type {
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const labelClasses = tw`mb-1.5 block text-[13px]`;
 const rowClasses = tw`list-none rounded-[12px] border border-border bg-surface px-4 py-3.5`;
 
 export function AssignmentsPage() {
   const { t, i18n } = useTranslation();
-  const me = useAppSelector((s) => s.auth.user);
+  const me = useAuthStore((s) => s.user);
   const canTeach = userCanTeach(me?.role);
   const queryClient = useQueryClient();
 

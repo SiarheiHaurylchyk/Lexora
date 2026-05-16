@@ -23,7 +23,7 @@ import {
 } from '@/shared/hooks/useSpeech';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { LEARNING_LANGUAGE_CODES } from '@/shared/lib/learningLanguages';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 type Scenario =
   | 'FREE'
@@ -82,7 +82,7 @@ const bubbleClasses = tw`max-w-[min(100%,420px)] whitespace-pre-wrap rounded-2xl
 
 export function AiPage() {
   const { t, i18n } = useTranslation();
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
   const learningLang = (user?.learningLanguage || 'en').trim() || 'en';
   const uiLocale = i18n.language?.toLowerCase().startsWith('ru') ? 'ru' : 'en';
 

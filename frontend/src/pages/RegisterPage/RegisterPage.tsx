@@ -11,7 +11,6 @@ import { LearningLanguageSelect } from '@/entities/LearningLanguage';
 import { authApi } from '@/shared/api/api-legacy';
 import { getApiErrorMessage } from '@/shared/lib/apiError';
 import { setCredentials } from '@/shared/lib/storeActions';
-import { useAppDispatch } from '@/shared/lib/storeHooks';
 
 type AccountType = 'LEARNER' | 'TEACHER';
 
@@ -22,7 +21,6 @@ const accountCardActive = tw`border-brand bg-[rgba(124,58,237,0.08)] shadow-[0_0
 export function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -53,13 +51,11 @@ export function RegisterPage() {
         accountType: form.accountType,
         learningLanguage: form.learningLanguage.trim() || undefined,
       });
-      dispatch(
-        setCredentials({
-          user: data.user,
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-        }),
-      );
+      setCredentials({
+        user: data.user,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+      });
       toast.success(t('auth.accountCreated'));
       navigate('/home');
     } catch (err: unknown) {

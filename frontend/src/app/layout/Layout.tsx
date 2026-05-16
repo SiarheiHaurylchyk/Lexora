@@ -30,7 +30,7 @@ import { UserMenu } from '@/widgets/UserMenu';
 import { useChatUnreadTotal } from '@/shared/hooks/useChatUnreadTotal';
 import { useLessonReminder } from '@/shared/hooks/useLessonReminder';
 import { userCanTeach } from '@/shared/lib/accountRole';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 interface NavItem {
   to: string;
@@ -80,7 +80,7 @@ const shellCollapsed = tw`!ml-[84px]`;
 export default function Layout() {
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const user = useAppSelector((s) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const mainFullBleed = isMainFullBleed(pathname);

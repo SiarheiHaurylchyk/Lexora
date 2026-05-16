@@ -1,4 +1,11 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+/* eslint-disable-next-line fsd/ordered-imports -- Prettier wraps the React import; order matches other pages (e.g. ClassroomPage). */
+import {
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -16,9 +23,9 @@ import {
   studentsApi,
   teachersApi,
 } from '@/shared/api/api-legacy';
-import type { TeacherDetail } from '@/shared/api/types';
+import type { TeacherDetail, TeacherReview } from '@/shared/api/types';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuth } from '@/shared/lib/storeHooks';
 import { getYouTubeEmbedUrl } from '@/shared/lib/youtube';
 
 type ProfileTab = 'about' | 'resume' | 'certs';
@@ -41,16 +48,101 @@ function normalizeTeacherDetail(raw: TeacherDetail): TeacherDetail {
   };
 }
 
+function TeacherViewerReviewSection({
+  teacherId,
+  viewerReview,
+  onAfterSubmit,
+}: {
+  teacherId: number;
+  viewerReview?: TeacherReview | null;
+  onAfterSubmit: () => void | Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [reviewRating, setReviewRating] = useState(
+    () => viewerReview?.rating ?? 5,
+  );
+  const [reviewComment, setReviewComment] = useState(
+    () => viewerReview?.comment ?? '',
+  );
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const submitReview = async (e: FormEvent) => {
+    e.preventDefault();
+    setSubmittingReview(true);
+    try {
+      await teachersApi.postReview(teacherId, {
+        rating: reviewRating,
+        comment: reviewComment.trim() || undefined,
+      });
+      toast.success(t('teachers.detail.reviewSaved'));
+      await onAfterSubmit();
+    } catch {
+      toast.error(t('teachers.detail.reviewFailed'));
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  return (
+    <section className={contentCardClasses}>
+      <h2 className={sectionTitleClasses}>{t('teachers.detail.yourReview')}</h2>
+      <form onSubmit={(e) => void submitReview(e)}>
+        <p className='text-text2 mb-3 text-sm'>
+          {t('teachers.detail.reviewLead')}
+        </p>
+        <div
+          className='mb-3 flex gap-1'
+          aria-label={t('teachers.detail.ratingLabel')}
+        >
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type='button'
+              className={cn(
+                starBtnBase,
+                n <= reviewRating && '!text-[#fbbf24]',
+              )}
+              onClick={() => setReviewRating(n)}
+            >
+              ★
+            </button>
+          ))}
+        </div>
+        <label
+          className='text-text2 mb-1.5 block text-[13px]'
+          htmlFor='teacher-review-comment'
+        >
+          {t('teachers.detail.reviewComment')}
+        </label>
+        <textarea
+          id='teacher-review-comment'
+          className='input-field mb-3'
+          rows={4}
+          value={reviewComment}
+          onChange={(e) => setReviewComment(e.target.value)}
+          placeholder={t('teachers.detail.reviewPlaceholder')}
+        />
+        <button
+          type='submit'
+          className='btn btn-primary'
+          disabled={submittingReview}
+        >
+          {submittingReview
+            ? t('common.loading')
+            : t('teachers.detail.reviewSubmit')}
+        </button>
+      </form>
+    </section>
+  );
+}
+
 export function TeacherDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAppSelector((s) => s.auth);
+  const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [profileTab, setProfileTab] = useState<ProfileTab>('about');
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState('');
-  const [submittingReview, setSubmittingReview] = useState(false);
   const [favoriteBusy, setFavoriteBusy] = useState(false);
   const availabilityAnchorRef = useRef<HTMLDivElement>(null);
   const availabilityViewerRef = useRef<AvailabilityViewerHandle>(null);
@@ -74,18 +166,6 @@ export function TeacherDetailPage() {
       navigate('/teachers');
     }
   }, [teacherQuery.isError, navigate, t]);
-
-  useEffect(() => {
-    if (!teacher) return;
-    const vr = teacher.viewerReview;
-    if (vr) {
-      setReviewRating(vr.rating);
-      setReviewComment(vr.comment ?? '');
-    } else {
-      setReviewRating(5);
-      setReviewComment('');
-    }
-  }, [teacher]);
 
   const scrollToAvailability = () => {
     availabilityAnchorRef.current?.scrollIntoView({
@@ -163,24 +243,6 @@ export function TeacherDetailPage() {
       toast.error(t('teachers.detail.favoriteFailed'));
     } finally {
       setFavoriteBusy(false);
-    }
-  };
-
-  const submitReview = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!isAuthenticated || isSelf) return;
-    setSubmittingReview(true);
-    try {
-      await teachersApi.postReview(teacher.id, {
-        rating: reviewRating,
-        comment: reviewComment.trim() || undefined,
-      });
-      toast.success(t('teachers.detail.reviewSaved'));
-      await reloadTeacher();
-    } catch {
-      toast.error(t('teachers.detail.reviewFailed'));
-    } finally {
-      setSubmittingReview(false);
     }
   };
 
@@ -395,57 +457,16 @@ export function TeacherDetailPage() {
           </section>
 
           {!isSelf && isAuthenticated && (
-            <section className={contentCardClasses}>
-              <h2 className={sectionTitleClasses}>
-                {t('teachers.detail.yourReview')}
-              </h2>
-              <form onSubmit={(e) => void submitReview(e)}>
-                <p className='text-text2 mb-3 text-sm'>
-                  {t('teachers.detail.reviewLead')}
-                </p>
-                <div
-                  className='mb-3 flex gap-1'
-                  aria-label={t('teachers.detail.ratingLabel')}
-                >
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      type='button'
-                      className={cn(
-                        starBtnBase,
-                        n <= reviewRating && '!text-[#fbbf24]',
-                      )}
-                      onClick={() => setReviewRating(n)}
-                    >
-                      ★
-                    </button>
-                  ))}
-                </div>
-                <label
-                  className='text-text2 mb-1.5 block text-[13px]'
-                  htmlFor='teacher-review-comment'
-                >
-                  {t('teachers.detail.reviewComment')}
-                </label>
-                <textarea
-                  id='teacher-review-comment'
-                  className='input-field mb-3'
-                  rows={4}
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder={t('teachers.detail.reviewPlaceholder')}
-                />
-                <button
-                  type='submit'
-                  className='btn btn-primary'
-                  disabled={submittingReview}
-                >
-                  {submittingReview
-                    ? t('common.loading')
-                    : t('teachers.detail.reviewSubmit')}
-                </button>
-              </form>
-            </section>
+            <TeacherViewerReviewSection
+              key={
+                teacher.viewerReview
+                  ? `rv-${teacher.viewerReview.id}`
+                  : 'rv-none'
+              }
+              teacherId={teacher.id}
+              viewerReview={teacher.viewerReview}
+              onAfterSubmit={reloadTeacher}
+            />
           )}
 
           {!isSelf && !isAuthenticated && (
@@ -639,7 +660,7 @@ export function TeacherDetailPage() {
 }
 
 interface StatProps {
-  value: React.ReactNode;
+  value: ReactNode;
   label: string;
   sub?: string;
 }

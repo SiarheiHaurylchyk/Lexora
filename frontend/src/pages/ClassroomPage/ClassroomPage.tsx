@@ -47,7 +47,7 @@ import {
   lessonSectionsSorted,
 } from '@/shared/lib/lessonSections';
 import { useApiQuery } from '@/shared/lib/query';
-import { useAppSelector } from '@/shared/lib/storeHooks';
+import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const ClassroomWhiteboardOverlay = lazy(() =>
   import('@/widgets/ClassroomWhiteboardOverlay').then((m) => ({
@@ -114,7 +114,7 @@ export function ClassroomPage() {
   const { linkId: linkIdParam } = useParams<{ linkId: string }>();
   const linkId = Number(linkIdParam);
   const { t } = useTranslation();
-  const me = useAppSelector((s) => s.auth.user);
+  const me = useAuthStore((s) => s.user);
   const { startPipCall } = useLessonCall();
   const queryClient = useQueryClient();
   const workspaceKey = ['classrooms', 'workspace', linkId] as const;
