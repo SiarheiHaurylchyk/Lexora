@@ -463,7 +463,15 @@
       "FLASHCARD": { "label": "Flashcards", "desc": "Flip & review" },
       "LEARN": { "label": "Learn", "desc": "Guided learning" },
       "MATCH": { "label": "Match", "desc": "Drag to match" },
-      "SPELL": { "label": "Spell", "desc": "Type it out" }
+      "SPELL": { "label": "Spell", "desc": "Type it out" },
+      "DRAG": { "label": "Drag", "desc": "Drag & Match" },
+      "SCRAMBLE": { "label": "Scramble", "desc": "Build the word" },
+      "GRAVITY": { "label": "Gravity", "desc": "Tap the match as words fall" },
+      "EXAM": { "label": "Exam", "desc": "Mixed quiz — results at the end" }
+    },
+    "direction": {
+      "label": "Direction",
+      "mixed": "↔ Mixed"
     }
   },
   "editDeck": {
@@ -487,7 +495,8 @@
     "bulkImport": "⚡ Bulk import",
     "addCard": "+ Add card",
     "bulkTitle": "Bulk Import",
-    "bulkImportInstructions": "One card per line. Separate term and definition with a tab, semicolon (;), or hyphen (-).",
+    "bulkImportInstructions": "One card per line. Supported formats below. Table headers are skipped automatically. Cards are saved immediately.",
+    "bulkFormats": "Supported formats",
     "bulkHelp": "One card per line. Separate term and definition with",
     "importCount": "Import {{count}} cards",
     "noCardsBody": "No cards yet. Add your first card or use bulk import!",
@@ -499,8 +508,11 @@
     "cardSaveFailed": "Failed to save card",
     "cardDeleted": "Card deleted",
     "cardDeleteFailed": "Failed to delete card",
-    "bulkInvalid": "No valid lines found. Use: term - definition",
-    "bulkSuccess": "{{count}} cards imported! Save each card to persist.",
+    "bulkInvalid": "No valid lines found. Example: apple - apple (translation)",
+    "bulkSuccess": "{{count}} cards saved",
+    "bulkSkipped": "Skipped lines (headers or noise): {{count}}",
+    "bulkSaveFailed": "Failed to save some cards",
+    "bulkImporting": "Saving…",
     "clickEditTerm": "Click to edit term...",
     "clickEditDef": "Click to edit definition...",
     "unsaved": "unsaved",
@@ -583,7 +595,11 @@
       "FLASHCARD": "⚡ Flashcards",
       "LEARN": "🎯 Learn",
       "MATCH": "🧩 Match",
-      "SPELL": "✏️ Spell"
+      "SPELL": "✏️ Spell",
+      "DRAG": "🔀 Drag & Match",
+      "SCRAMBLE": "🔤 Scramble",
+      "GRAVITY": "☄️ Gravity",
+      "EXAM": "📝 Exam"
     },
     "flashcard": {
       "reveal": "{{lang}} — click to reveal",
@@ -609,8 +625,39 @@
     },
     "match": {
       "title": "Match the pairs",
-      "subtitle": "Click a term then its translation",
-      "progress": "✓ {{matched}} / {{total}}"
+      "subtitle": "Click a term then its translation (or vice versa)",
+      "progress": "✓ {{matched}} / {{total}}",
+      "round": "Round {{current}} / {{total}}"
+    },
+    "drag": {
+      "title": "Drag & Match",
+      "subtitle": "Connect words from both languages — click or drag",
+      "progress": "✓ {{matched}} / {{total}} pairs",
+      "round": "Round {{current}} / {{total}}"
+    },
+    "scramble": {
+      "prompt": "Build the answer · {{from}} → {{to}}",
+      "hint": "Tap letters in order. Tap a filled slot to remove a letter.",
+      "reset": "Reset",
+      "check": "Check",
+      "correct": "Correct:",
+      "noEligible": "No cards fit this mode (answers must be 2–22 characters)."
+    },
+    "gravity": {
+      "hintTap": "Tap the correct translation before the word hits the red zone",
+      "lives": "Lives",
+      "speed": "Speed {{level}}%",
+      "noCards": "No cards to play"
+    },
+    "exam": {
+      "hint": "No hints until the end — choose an answer or type it, then continue",
+      "progress": "{{current}} / {{total}}",
+      "choicePrompt": "Choose the answer",
+      "typePrompt": "Type the answer",
+      "placeholder": "Answer in {{lang}}...",
+      "next": "Next →",
+      "finish": "Finish exam →",
+      "tooFew": "Need at least {{min}} cards (or sides in mixed mode) for an exam"
     },
     "result": {
       "perfect": "Perfect!",
@@ -618,6 +665,10 @@
       "good": "Good effort!",
       "keep": "Keep practicing!",
       "scoreLine": "{{correct}} out of {{total}} correct",
+      "viewMistakes": "View mistakes ({{count}})",
+      "mistakesTitle": "Mistakes this session",
+      "expected": "Correct answer",
+      "yourAnswer": "Your answer",
       "backToDeck": "Back to deck",
       "again": "Study again →"
     }

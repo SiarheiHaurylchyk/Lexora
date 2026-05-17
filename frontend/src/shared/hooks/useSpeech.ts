@@ -38,6 +38,37 @@ export function resolveLang(lang: string) {
   return LANG_MAP[lang] || lang || 'en-US';
 }
 
+/** TTS is enabled only for English (no Russian or other locales). */
+export function canSpeakLanguage(lang: string): boolean {
+  const base = (lang || '').split('-')[0].toLowerCase();
+  return base === 'en';
+}
+
+/** True when text is suitable for English TTS (Latin script, not Cyrillic-only). */
+export function isEnglishSpeakable(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  if (!/[\u0400-\u04FF]/.test(trimmed)) return true;
+  const cyr = (trimmed.match(/[\u0400-\u04FF]/g) || []).length;
+  const lat = (trimmed.match(/[a-zA-Z]/g) || []).length;
+  return lat > 0 && lat >= cyr;
+}
+
+/** Show 🔊 controls only when playback will actually run. */
+export function shouldShowSpeakButton(text: string, lang?: string): boolean {
+  if (lang != null && !canSpeakLanguage(lang)) return false;
+  return isEnglishSpeakable(text);
+}
+
+/** Speak using English TTS when the visible text is Latin/English (ignores deck lang fields). */
+export function speakEnglishIfPossible(
+  speak: (text: string, lang?: string, opts?: SpeakOptions) => void,
+  text: string,
+  opts?: SpeakOptions,
+) {
+  if (isEnglishSpeakable(text)) speak(text, 'en', opts);
+}
+
 function normalizeLangTag(raw: string): string {
   return raw.trim().replace('_', '-');
 }
@@ -228,6 +259,7 @@ export function useSpeech() {
   const speak = useCallback(
     (text: string, lang = 'en', opts: SpeakOptions = {}) => {
       if (!text || !window.speechSynthesis) return;
+      if (!canSpeakLanguage(lang) || !isEnglishSpeakable(text)) return;
       window.speechSynthesis.cancel();
 
       let rate =
@@ -274,10 +306,11 @@ export function useSpeech() {
         return;
       }
       for (const { text: chunk, lang } of pieces) {
-        const voice = pickVoice(lang);
+        if (lang !== 'en' || !isEnglishSpeakable(chunk)) continue;
+        const voice = pickVoice('en');
         const utter = new SpeechSynthesisUtterance(chunk);
-        utter.lang = voice?.lang || resolveLang(lang);
-        utter.rate = naturalRateForLang(lang, speechSettings.normalRate);
+        utter.lang = voice?.lang || resolveLang('en');
+        utter.rate = naturalRateForLang('en', speechSettings.normalRate);
         utter.pitch = 1;
         utter.volume = 1;
         if (voice) utter.voice = voice;

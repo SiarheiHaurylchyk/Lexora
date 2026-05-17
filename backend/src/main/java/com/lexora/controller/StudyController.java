@@ -4,6 +4,7 @@ import com.lexora.dto.Dto;
 import com.lexora.entity.*;
 import com.lexora.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,10 +39,16 @@ public class StudyController {
 
         int totalCards = (int) cardRepository.countByDeck(deck);
 
+        StudySession.StudyMode studyMode = parseStudyMode(request.mode);
+        if (studyMode == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new Dto.MessageResponse("Unknown study mode: " + request.mode, false));
+        }
+
         StudySession session = StudySession.builder()
                 .user(user)
                 .deck(deck)
-                .mode(StudySession.StudyMode.valueOf(request.mode))
+                .mode(studyMode)
                 .totalCards(totalCards)
                 .correctAnswers(0)
                 .incorrectAnswers(0)
@@ -211,6 +218,17 @@ public class StudyController {
     }
 
     private int orZero(Integer v) { return v != null ? v : 0; }
+
+    private StudySession.StudyMode parseStudyMode(String mode) {
+        if (mode == null || mode.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return StudySession.StudyMode.valueOf(mode.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 
     private User getUser(Authentication auth) {
         return userRepository.findByUsername(auth.getName())

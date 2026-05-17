@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ShareDeckModal } from '@/features/ShareDeck';
 
 import type { CardItem, DeckItem } from '@/shared/api/types';
-import { useSpeech } from '@/shared/hooks/useSpeech';
+import { shouldShowSpeakButton, useSpeech } from '@/shared/hooks/useSpeech';
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { useApiQuery } from '@/shared/lib/query';
 import { useAuthStore } from '@/shared/lib/storeHooks';
@@ -16,6 +16,10 @@ const STUDY_MODES = [
   { key: 'LEARN', icon: '🎯' },
   { key: 'MATCH', icon: '🧩' },
   { key: 'SPELL', icon: '✏️' },
+  { key: 'DRAG', icon: '🔀' },
+  { key: 'SCRAMBLE', icon: '🔤' },
+  { key: 'GRAVITY', icon: '☄️' },
+  { key: 'EXAM', icon: '📝' },
 ] as const;
 
 const cardRowClasses = tw`grid items-center gap-4 grid-cols-[56px_1fr_1fr_auto] rounded-[12px] border border-border bg-surface px-5 py-4 transition-colors duration-200 hover:border-border2`;
@@ -28,6 +32,9 @@ export function DeckPage() {
   const { speak } = useSpeech();
   const [searchQ, setSearchQ] = useState('');
   const [showShare, setShowShare] = useState(false);
+  const [studyDir, setStudyDir] = useState<'forward' | 'reverse' | 'mixed'>(
+    'forward',
+  );
 
   const deckId = Number(id);
   const deckQuery = useApiQuery<DeckItem>({
@@ -149,24 +156,94 @@ export function DeckPage() {
           </div>
 
           {deck.cardCount > 0 && (
-            <div className='grid grid-cols-4 gap-2.5 max-[720px]:grid-cols-2'>
-              {STUDY_MODES.map(({ key, icon }) => (
-                <button
-                  key={key}
-                  type='button'
-                  onClick={() => navigate(`/decks/${id}/study/${key}`)}
-                  className='text-text cursor-pointer rounded-[12px] bg-[rgba(0,0,0,0.3)] p-3 text-center transition-colors duration-200'
-                  style={modeBtnStyle}
-                >
-                  <div className='mb-1 text-[22px]'>{icon}</div>
-                  <div className='text-[13px] font-semibold'>
-                    {t(`deck.modes.${key}.label`)}
-                  </div>
-                  <div className='text-text3 mt-0.5 text-[11px]'>
-                    {t(`deck.modes.${key}.desc`)}
-                  </div>
-                </button>
-              ))}
+            <div>
+              <p className='text-text3 mb-2 text-[11px] font-semibold tracking-[0.12em] uppercase'>
+                {t('deck.direction.label')}
+              </p>
+              <div
+                className='border-border bg-bg/50 mb-4 grid grid-cols-3 gap-1 rounded-2xl border p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+                role='group'
+                aria-label={t('deck.direction.label')}
+              >
+                {(
+                  [
+                    {
+                      id: 'forward' as const,
+                      primary: deck.sourceLanguage,
+                      secondary: deck.targetLanguage,
+                    },
+                    {
+                      id: 'reverse' as const,
+                      primary: deck.targetLanguage,
+                      secondary: deck.sourceLanguage,
+                    },
+                    { id: 'mixed' as const, primary: null, secondary: null },
+                  ] as const
+                ).map((opt) => {
+                  const active = studyDir === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type='button'
+                      onClick={() => setStudyDir(opt.id)}
+                      className={cn(
+                        'relative flex min-h-[52px] flex-col items-center justify-center rounded-xl px-2 py-2.5 transition-all duration-200',
+                        active
+                          ? 'from-brand to-accent bg-gradient-to-br via-[#6d28d9] text-white shadow-[0_4px_20px_rgba(124,58,237,0.45)]'
+                          : 'text-text2 hover:bg-surface/90 hover:text-text',
+                      )}
+                    >
+                      {opt.id === 'mixed' ? (
+                        <>
+                          <span className='text-xl leading-none'>↔</span>
+                          <span
+                            className={cn(
+                              'mt-1 text-[11px] font-semibold',
+                              active ? 'text-white/90' : 'text-text3',
+                            )}
+                          >
+                            {t('deck.direction.mixed')}
+                          </span>
+                        </>
+                      ) : (
+                        <span className='font-display flex items-center gap-1.5 text-[15px] font-bold tracking-wide'>
+                          <span className='uppercase'>{opt.primary}</span>
+                          <span
+                            className={cn(
+                              'text-sm font-normal',
+                              active ? 'text-white/75' : 'text-text3',
+                            )}
+                          >
+                            →
+                          </span>
+                          <span className='uppercase'>{opt.secondary}</span>
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className='grid grid-cols-4 gap-2 max-[900px]:grid-cols-3 max-[520px]:grid-cols-2'>
+                {STUDY_MODES.map(({ key, icon }) => (
+                  <button
+                    key={key}
+                    type='button'
+                    onClick={() =>
+                      navigate(`/decks/${id}/study/${key}?dir=${studyDir}`)
+                    }
+                    className='text-text cursor-pointer rounded-[12px] bg-[rgba(0,0,0,0.3)] p-3 text-center transition-colors duration-200'
+                    style={modeBtnStyle}
+                  >
+                    <div className='mb-1 text-[22px]'>{icon}</div>
+                    <div className='text-[13px] font-semibold'>
+                      {t(`deck.modes.${key}.label`)}
+                    </div>
+                    <div className='text-text3 mt-0.5 text-[11px]'>
+                      {t(`deck.modes.${key}.desc`)}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -242,44 +319,28 @@ export function DeckPage() {
                 )}
               </div>
               <div className='text-text2 text-[15px]'>{card.definition}</div>
-              <div className='flex gap-1.5'>
-                <button
-                  type='button'
-                  className='btn btn-ghost btn-icon text-text3 text-base'
-                  title={t('deck.pronounceTerm')}
-                  onClick={() => speak(card.term, deck.sourceLanguage)}
-                >
-                  🔊
-                </button>
-                <button
-                  type='button'
-                  className='btn btn-ghost btn-icon text-text3 text-base'
-                  title={t('deck.pronounceTermSlow')}
-                  onClick={() =>
-                    speak(card.term, deck.sourceLanguage, { slow: true })
-                  }
-                >
-                  🐢
-                </button>
-                <button
-                  type='button'
-                  className='btn btn-ghost btn-icon text-text3 text-base'
-                  title={t('deck.pronounceDef')}
-                  onClick={() => speak(card.definition, deck.targetLanguage)}
-                >
-                  🔊
-                </button>
-                <button
-                  type='button'
-                  className='btn btn-ghost btn-icon text-text3 text-base'
-                  title={t('deck.pronounceDefSlow')}
-                  onClick={() =>
-                    speak(card.definition, deck.targetLanguage, { slow: true })
-                  }
-                >
-                  🐢
-                </button>
-              </div>
+              {shouldShowSpeakButton(card.term, deck.sourceLanguage) && (
+                <div className='flex gap-1.5'>
+                  <button
+                    type='button'
+                    className='btn btn-ghost btn-icon text-text3 text-base'
+                    title={t('deck.pronounceTerm')}
+                    onClick={() => speak(card.term, deck.sourceLanguage)}
+                  >
+                    🔊
+                  </button>
+                  <button
+                    type='button'
+                    className='btn btn-ghost btn-icon text-text3 text-base'
+                    title={t('deck.pronounceTermSlow')}
+                    onClick={() =>
+                      speak(card.term, deck.sourceLanguage, { slow: true })
+                    }
+                  >
+                    🐢
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

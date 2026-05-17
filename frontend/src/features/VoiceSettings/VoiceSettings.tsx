@@ -10,38 +10,10 @@ import {
 } from '@/shared/lib/storeActions';
 import { useSettingsStore } from '@/shared/lib/storeHooks';
 
-const LANGS = [
-  'en',
-  'ru',
-  'de',
-  'fr',
-  'es',
-  'it',
-  'pt',
-  'zh',
-  'ja',
-  'ko',
-  'ar',
-  'pl',
-  'tr',
-  'uk',
-] as const;
+const LANGS = ['en'] as const;
 
 const SAMPLE: Record<string, string> = {
   en: 'Hello, this is a sample sentence.',
-  ru: 'Привет, это пример произношения.',
-  de: 'Hallo, das ist ein Beispielsatz.',
-  fr: 'Bonjour, ceci est un exemple.',
-  es: 'Hola, esto es una frase de ejemplo.',
-  it: 'Ciao, questa è una frase di esempio.',
-  pt: 'Olá, esta é uma frase de exemplo.',
-  zh: '你好，这是一个示例句子。',
-  ja: 'こんにちは、これは例文です。',
-  ko: '안녕하세요, 예시 문장입니다.',
-  ar: 'مرحبا، هذه جملة مثال.',
-  pl: 'Cześć, to jest przykładowe zdanie.',
-  tr: 'Merhaba, bu bir örnek cümledir.',
-  uk: 'Привіт, це приклад речення.',
 };
 
 export function VoiceSettings() {

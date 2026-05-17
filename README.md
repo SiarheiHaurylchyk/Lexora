@@ -1,229 +1,201 @@
-# ✦ Lexora — Smart Flashcard Learning Platform
+# Lexora — language learning platform
 
-A full-stack language learning platform inspired by Quizlet, built with React + Spring Boot + PostgreSQL.
+Full-stack platform for flashcards, spaced repetition, teacher marketplace, virtual classrooms, and AI tutoring. Quizlet-style decks with modern study modes and classroom tooling.
 
----
-
-## 🏗 Tech Stack
-
-| Layer     | Technology                                  |
-|-----------|---------------------------------------------|
-| Frontend  | React 19, TypeScript, Vite 7, React Router |
-| Backend   | Spring Boot 2.7, Java 8, Spring Security    |
-| Auth      | JWT (access + refresh tokens)               |
-| Database  | PostgreSQL 15                               |
-| Deploy    | Docker + Docker Compose                     |
+**UI languages:** English · Russian (`i18next`)
 
 ---
 
-## ✨ Features
+## Tech stack
 
-### Study Modes
-- **⚡ Flashcards** — 3D flip cards with keyboard shortcuts (Space, ←, →)
-- **🎯 Learn** — Multiple choice questions with instant feedback
-- **🧩 Match** — Drag-and-match pairs game
-- **✏️ Spell** — Type the translation to reinforce spelling
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 19, TypeScript 5.6, Vite 7.3, Tailwind CSS v4, React Router 6 |
+| State | Redux Toolkit (auth/settings), Zustand, TanStack Query v5 |
+| Backend | Spring Boot 2.7, Java 8, Spring Security, JWT |
+| Database | PostgreSQL 15 |
+| Realtime | STOMP WebSocket (classroom whiteboard) |
+| Deploy | Docker Compose |
 
-### Learning Intelligence
-- **SM-2 Spaced Repetition** — Algorithm schedules reviews at optimal intervals
-- **Card Status Tracking** — Not started → Learning → Familiar → Known → Mastered
-- **Study History** — Full session log with accuracy percentages
-
-### Content Management
-- **Deck Builder** — Create decks with color, emoji, language selection
-- **Card Editor** — Inline editor with term, definition, transcription, example
-- **Bulk Import** — Paste tab/semicolon/dash-separated lists to import dozens of cards at once
-- **Public/Private** — Share decks with the community or keep them private
-
-### Voice & Audio
-- **Text-to-Speech** — Native browser TTS with 15+ language voices
-- **Per-card pronunciation** — Click 🔊 on any card in any view
-- **Auto-pronounce** — Flashcard mode speaks terms automatically
-
-### UX & Design
-- **Dark theme** — Elegant dark UI with purple/cyan accent palette
-- **Responsive** — Works on all screen sizes
-- **Skeleton loading** — Smooth loading states everywhere
-- **Toast notifications** — Non-intrusive success/error feedback
-- **Animated transitions** — Subtle fade/scale animations throughout
+**Frontend layout:** [Feature-Sliced Design](frontend/docs/architecture.md) (`app` → `pages` → `widgets` → `features` → `entities` → `shared`).
 
 ---
 
-## 🚀 Quick Start
+## Features
 
-### Option 1: Docker Compose (recommended)
+### Flashcards & study
+
+| Mode | Description |
+|------|-------------|
+| **Flashcards** | 3D flip cards, keyboard shortcuts (Space, ← / →) |
+| **Learn** | Multiple choice with instant feedback |
+| **Match** | Tap term ↔ translation in columns (batched rounds for large decks) |
+| **Spell** | Type the answer; forward / reverse prompts |
+| **Drag & Match** | Drag or click to pair words in a mixed grid (EN ↔ RU pills) |
+| **Scramble** | Build the answer from letter tiles |
+| **Gravity** | Tap the correct match as the prompt falls |
+| **Exam** | Up to 15 mixed questions (choice + typing); score only at the end |
+
+**Study direction** (chosen before starting a session):
+
+- `en → ru` — term first, guess translation  
+- `ru → en` — translation first, guess term  
+- **Mixed** — random direction per card  
+
+### Decks & cards
+
+- Deck builder: title, languages, color, emoji, public/private visibility  
+- Inline card editor with auto-save when switching cards  
+- **Bulk import** — one card per line; supports Quizlet/Excel (tab), Lexora (`term - definition`), Anki/CSV (`;`), Markdown tables; cards are saved to the API immediately  
+- Optional **image URL** per term/definition (no built-in image generation)
+
+### Learning intelligence
+
+- **SM-2** spaced repetition (`ProgressService`, `/api/study/due-cards`)  
+- Card progress: Learning → Familiar → Known → Mastered  
+- Study sessions with accuracy and history  
+
+### Voice
+
+- Browser **text-to-speech for English only** (terms and Latin script)  
+- Russian definitions are not spoken; 🔊 controls appear only when playback applies  
+
+### Platform (beyond decks)
+
+- Teacher marketplace and profiles  
+- Virtual classrooms with whiteboard (WebSocket sync)  
+- Lessons, materials, assignments, scheduling  
+- AI tutor (provider-agnostic: `mock`, Groq, xAI, Ollama, DeepSeek)  
+- Jitsi video integration  
+
+---
+
+## Quick start
+
+### Docker Compose (recommended)
 
 ```bash
-git clone <repo>
+git clone <repo-url>
 cd lexora
+cp .env.example .env   # optional: edit AI keys, DB, Jitsi
 docker-compose up -d
 ```
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8080/api
-- Database: localhost:5432
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:8080/api |
+| PostgreSQL | localhost:5432 |
 
-### Option 2: Manual Setup
+### Local development
 
-#### 1. PostgreSQL
+**Requirements:** Node.js ^20.19 or ≥22.12, Java 8+, Maven, PostgreSQL 15.
 
 ```bash
+# Database
 psql -U postgres -f init-db.sql
-```
 
-#### 2. Backend
-
-```bash
+# Backend (port 8080)
 cd backend
 mvn spring-boot:run
-```
 
-#### 3. Frontend
-
-```bash
+# Frontend (port 3000; proxies /api and /ws to backend)
 cd frontend
 npm install
-VITE_API_URL=http://localhost:8080/api npm run dev
+npm run dev
 ```
+
+| Stack | Dev | Build / check |
+|-------|-----|----------------|
+| Frontend | `npm run dev` | `npm run build` · `npm run typecheck` · `npm run lint` |
+| Backend | `mvn spring-boot:run` | `mvn package` |
 
 ---
 
-## 📡 API Reference
+## Study API
 
-### Auth endpoints
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login, get JWT |
-| POST | `/api/auth/refresh` | Refresh access token |
-| GET  | `/api/auth/me` | Get current user |
+`POST /api/study/start` body:
 
-### Deck endpoints
-| Method | Path | Description |
-|--------|------|-------------|
-| GET  | `/api/decks/my` | My decks |
-| GET  | `/api/decks/public` | Public decks (paginated) |
-| GET  | `/api/decks/{id}` | Deck with cards |
-| POST | `/api/decks` | Create deck |
-| PUT  | `/api/decks/{id}` | Update deck |
-| DELETE | `/api/decks/{id}` | Delete deck |
-| POST | `/api/decks/{id}/cards` | Add card |
-| PUT  | `/api/decks/{id}/cards/{cardId}` | Update card |
-| DELETE | `/api/decks/{id}/cards/{cardId}` | Delete card |
-| GET  | `/api/decks/search?q=` | Search public decks |
+```json
+{ "deckId": 1, "mode": "FLASHCARD" }
+```
 
-### Study endpoints
+**Modes:** `FLASHCARD` · `LEARN` · `MATCH` · `SPELL` · `DRAG` · `TEST`
+
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/study/start` | Start session |
-| POST | `/api/study/sessions/{id}/answer` | Record answer |
+| POST | `/api/study/sessions/{id}/answer` | Record answer (SRS rating) |
 | POST | `/api/study/sessions/{id}/complete` | Complete session |
-| GET  | `/api/study/history` | Study history |
-| GET  | `/api/study/stats` | User stats |
-| GET  | `/api/study/due-cards` | Due for review (SRS) |
+| GET | `/api/study/history` | Session history |
+| GET | `/api/study/stats` | Aggregated stats |
+| GET | `/api/study/due-cards` | Cards due for review |
+| GET | `/api/study/progress` | Streaks, heatmap, badges |
+
+Other REST areas: auth, decks/cards, teachers, classrooms, lessons, materials, AI chat — see `backend/src/main/java/com/lexora/controller/`.
 
 ---
 
-## 🗂 Project Structure
+## Environment variables
+
+Copy [`.env.example`](.env.example) → `.env` for Docker Compose.
+
+### Backend (highlights)
+
+| Variable | Default | Notes |
+|----------|---------|--------|
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/lexora_db` | PostgreSQL |
+| `LEXORA_AI_PROVIDER` | `mock` | `mock` · `groq` · `xai` · `ollama` · `deepseek` |
+| `GROQ_API_KEY` / `XAI_API_KEY` | — | Required for those providers |
+| `LEXORA_JITSI_BASE_URL` | `https://meet.jit.si` | Self-hosted Jitsi override |
+| `APP_JWT_SECRET` | (see `application.properties`) | JWT signing |
+| `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | CORS |
+
+### Frontend
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_API_URL` | `/api` | API base (`http://localhost:8080/api` if not using Vite proxy) |
+
+---
+
+## Repository layout
 
 ```
 lexora/
 ├── docker-compose.yml
 ├── init-db.sql
-├── frontend/
+├── frontend/                 # React SPA (FSD)
 │   ├── src/
-│   │   ├── App.tsx              # Routes
-│   │   ├── index.css            # Global design system
-│   │   ├── store/
-│   │   │   └── authStore.ts     # Zustand auth state
-│   │   ├── services/
-│   │   │   └── api.ts           # Axios API client
-│   │   ├── hooks/
-│   │   │   └── useSpeech.ts     # TTS hook
-│   │   ├── components/
-│   │   │   ├── Layout.tsx       # Sidebar layout
-│   │   │   ├── DeckCard.tsx     # Deck card component
-│   │   │   └── CreateDeckModal.tsx
-│   │   └── pages/
-│   │       ├── LandingPage.tsx  # Public home
-│   │       ├── AuthPages.tsx    # Login + Register
-│   │       ├── DashboardPage.tsx
-│   │       ├── DeckPage.tsx     # View deck + study modes
-│   │       ├── EditDeckPage.tsx # Card editor
-│   │       ├── StudyPage.tsx    # All study modes
-│   │       ├── ExplorePage.tsx  # Browse public decks
-│   │       └── ProfilePage.tsx  # Stats + history
-│   └── Dockerfile
+│   │   ├── app/              # Providers, layout, routes
+│   │   ├── pages/            # DeckPage, StudyPage, EditDeckPage, …
+│   │   ├── widgets/          # Layout chrome, classroom panels
+│   │   ├── features/         # CreateDeck, CardImagePicker, …
+│   │   ├── entities/         # Deck, Teacher, …
+│   │   └── shared/           # api, hooks (useSpeech), locales, ui
+│   └── docs/                 # architecture, TanStack Query, forms
 └── backend/
-    ├── pom.xml
-    ├── Dockerfile
     └── src/main/java/com/lexora/
-        ├── LexoraApplication.java
-        ├── config/SecurityConfig.java
-        ├── controller/
-        │   ├── AuthController.java
-        │   ├── DeckController.java
-        │   └── StudyController.java
-        ├── dto/Dto.java
-        ├── entity/
-        │   ├── User.java
-        │   ├── Deck.java
-        │   ├── Card.java
-        │   ├── StudySession.java
-        │   ├── CardProgress.java
-        │   └── Tag.java
-        ├── repository/
-        │   ├── UserRepository.java
-        │   ├── DeckRepository.java
-        │   ├── CardRepository.java
-        │   ├── CardProgressRepository.java
-        │   └── StudySessionRepository.java
-        └── security/
-            ├── JwtUtils.java
-            ├── JwtAuthenticationFilter.java
-            └── UserDetailsServiceImpl.java
+        ├── controller/       # REST + study
+        ├── entity/             # JPA models
+        ├── service/            # SRS, AI, notifications, Jitsi, …
+        ├── security/           # JWT
+        └── websocket/          # Classroom whiteboard
 ```
 
 ---
 
-## 🔐 Environment Variables
+## Documentation
 
-### Backend
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/lexora_db` | DB URL |
-| `SPRING_DATASOURCE_USERNAME` | `lexora_user` | DB user |
-| `SPRING_DATASOURCE_PASSWORD` | `lexora_password` | DB password |
-| `APP_JWT_SECRET` | (see application.properties) | JWT signing secret |
-| `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Allowed CORS origins |
-
-### Frontend
-
-Use **Node.js ^20.19** or **≥22.12** (required by Vite). The repo pins **Vite 7.3** with Rollup for stable builds on Windows/Linux/Docker; newer **Vite 8** relies on Rolldown native bindings—if you upgrade and `vite build` fails with “Cannot find native binding”, run `npm install @rolldown/binding-win32-x64-msvc@1.0.0-rc.17 --save-dev` on Windows or fix npm optional dependencies, then retry.
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VITE_API_URL` | `/api` (dev: proxy to backend) | Backend API base URL (`http://localhost:8080/api` if backend not proxied) |
+| Doc | Purpose |
+|-----|---------|
+| [`CLAUDE.md`](CLAUDE.md) | Repo orientation for contributors |
+| [`frontend/CLAUDE.md`](frontend/CLAUDE.md) | Frontend conventions |
+| [`frontend/docs/architecture.md`](frontend/docs/architecture.md) | FSD deep-dive |
+| [`frontend/docs/tanstack_query.md`](frontend/docs/tanstack_query.md) | Data fetching patterns |
 
 ---
 
-## 🗺 Roadmap (Extensibility)
-
-This architecture is ready to extend with:
-
-- [ ] **AI-generated cards** — GPT integration to auto-generate terms from a topic
-- [ ] **Audio upload** — Custom pronunciation recordings
-- [ ] **Collaborative decks** — Multi-user editing
-- [ ] **Leaderboards** — Community competitions
-- [ ] **Mobile app** — React Native with shared API
-- [ ] **Markdown in cards** — Rich text support
-- [ ] **Import from CSV/Anki** — Deck migration
-- [ ] **Streak system** — Daily study gamification
-- [ ] **Premium tier** — Subscription with advanced analytics
-- [ ] **EdVibe-style courses** — Structured lesson paths
-
----
-
-## 📄 License
+## License
 
 Commercial License
