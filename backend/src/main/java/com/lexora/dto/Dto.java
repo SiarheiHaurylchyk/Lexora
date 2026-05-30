@@ -204,6 +204,61 @@ public class Dto {
         public List<BadgeDTO> badges;
     }
 
+    /** GET /api/study/due-summary — due counts grouped by deck. */
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class DueSummaryResponse {
+        public int totalDue;
+        public List<DueDeckBucket> decks;
+    }
+
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class DueDeckBucket {
+        public Long deckId;
+        public String deckTitle;
+        public String emoji;
+        public int dueCount;
+    }
+
+    /** GET /api/study/due-review — full card rows ready for a review session. */
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class DueReviewResponse {
+        public int totalDue;
+        public List<DueReviewCardDTO> cards;
+    }
+
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class DueReviewCardDTO {
+        public Long cardId;
+        public Long deckId;
+        public String deckTitle;
+        public String sourceLanguage;
+        public String targetLanguage;
+        public String term;
+        public String definition;
+        public String example;
+        public String transcription;
+        public String termImageUrl;
+        public String definitionImageUrl;
+    }
+
+    /** GET /api/decks/{id}/srs — per-card SRS state for one deck. */
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class DeckSrsResponse {
+        public int dueCount;
+        public int newCount;
+        public int masteredCount;
+        public List<CardSrsItem> cards;
+    }
+
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class CardSrsItem {
+        public Long cardId;
+        /** NOT_STARTED when the user has never studied this card. */
+        public String status;
+        public String nextReview;
+        public boolean due;
+    }
+
     /** Teacher availability slot used by both teacher (own calendar) and students (book). */
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
     public static class TeacherSlotDTO {

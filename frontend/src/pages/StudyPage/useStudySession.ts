@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { studyApi } from '@/shared/api/api-legacy';
-import type { CardItem, DeckItem } from '@/shared/api/types';
+import type { CardItem, DeckItem, DeckSrsPayload } from '@/shared/api/types';
 import { useApiQuery } from '@/shared/lib/query';
+import { dueCardIds } from '@/shared/lib/srs';
 import {
   applyStudyDirection,
   type StudyCard,
@@ -38,7 +40,9 @@ export function useStudySession() {
   const { t } = useTranslation();
   const { id, mode } = useParams<{ id: string; mode: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const deckId = Number(id);
+  const isReview = mode === 'REVIEW';
 
   // Направление берём из URL один раз при монтировании, дальше не меняем
   const [dir] = useState<StudyDir>(readStudyDirFromUrl);
@@ -61,6 +65,11 @@ export function useStudySession() {
     url: `/decks/${deckId}`,
     enabled: Number.isFinite(deckId),
   });
+  const srsQuery = useApiQuery<DeckSrsPayload>({
+    queryKey: ['srs', deckId, retryKey],
+    url: `/decks/${deckId}/srs`,
+    enabled: Number.isFinite(deckId) && isReview,
+  });
   const deck = deckQuery.data ?? null;
 
   // Словарь cardId → {term, definition} — нужен для экрана ошибок
@@ -73,12 +82,24 @@ export function useStudySession() {
   useEffect(() => {
     const data = deckQuery.data;
     if (!data) return;
-    if (!data.cards?.length) {
+    if (isReview && !srsQuery.data) return;
+
+    let pool = data.cards ?? [];
+    if (isReview) {
+      const ids = dueCardIds(srsQuery.data!.cards);
+      pool = pool.filter((c) => ids.has(c.id));
+      if (pool.length === 0) {
+        toast.error(t('srs.noDue'));
+        navigate(`/decks/${id}`);
+        return;
+      }
+    } else if (!pool.length) {
       toast.error(t('study.noCards'));
       navigate(`/decks/${id}`);
       return;
     }
-    const shuffled = [...data.cards].sort(() => Math.random() - 0.5);
+
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
     setRawCards(shuffled);
     setCards(applyStudyDirection(shuffled, dir));
 
@@ -97,7 +118,17 @@ export function useStudySession() {
     return () => {
       cancelled = true;
     };
-  }, [deckQuery.data, deckId, mode, navigate, id, t, dir]);
+  }, [
+    deckQuery.data,
+    srsQuery.data,
+    deckId,
+    mode,
+    navigate,
+    id,
+    t,
+    dir,
+    isReview,
+  ]);
 
   // Колоду не удалось загрузить — уходим на страницу колоды
   useEffect(() => {
@@ -118,6 +149,7 @@ export function useStudySession() {
         // Не критично, если сервер не подтвердил закрытие — продолжаем
       }
     }
+    void queryClient.invalidateQueries({ queryKey: ['srs'] });
   };
 
   /** Кнопка «Повторить»: сброс сессии и повторная загрузка колоды. */
@@ -127,8 +159,10 @@ export function useStudySession() {
     setRetryKey((k) => k + 1);
   };
 
-  // Грузим, пока нет ни данных колоды, ни созданной сессии
-  const loading = deckQuery.isLoading || sessionId === null;
+  const loading =
+    deckQuery.isLoading ||
+    (isReview && srsQuery.isLoading) ||
+    sessionId === null;
 
   return {
     deck,

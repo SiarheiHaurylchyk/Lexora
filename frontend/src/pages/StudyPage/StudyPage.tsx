@@ -26,6 +26,7 @@ const KNOWN_MODES = [
   'SCRAMBLE',
   'GRAVITY',
   'EXAM',
+  'REVIEW',
 ] as const;
 
 type StudyModeName = (typeof KNOWN_MODES)[number];
@@ -51,6 +52,8 @@ function ActiveStudyMode(props: StudyModeProps & { mode: string | undefined }) {
       return <GravityMode {...rest} />;
     case 'EXAM':
       return <ExamMode {...rest} />;
+    case 'REVIEW':
+      return <FlashcardMode {...rest} />;
     default:
       return <FlashcardMode {...rest} />;
   }

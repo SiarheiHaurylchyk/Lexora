@@ -91,6 +91,62 @@ export interface StudySession {
   completedAt?: string;
 }
 
+/** GET /api/study/due-summary */
+export interface DueSummary {
+  totalDue: number;
+  decks: DueDeckBucket[];
+}
+
+export interface DueDeckBucket {
+  deckId: number;
+  deckTitle: string;
+  emoji?: string;
+  dueCount: number;
+}
+
+/** GET /api/study/due-review */
+export interface DueReviewPayload {
+  totalDue: number;
+  cards: DueReviewCard[];
+}
+
+export interface DueReviewCard {
+  cardId: number;
+  deckId: number;
+  deckTitle: string;
+  sourceLanguage: string;
+  targetLanguage: string;
+  term: string;
+  definition: string;
+  example?: string;
+  transcription?: string;
+  termImageUrl?: string | null;
+  definitionImageUrl?: string | null;
+}
+
+/** Card SRS status from the server. */
+export type CardSrsStatus =
+  | 'NOT_STARTED'
+  | 'LEARNING'
+  | 'FAMILIAR'
+  | 'KNOWN'
+  | 'MASTERED';
+
+/** GET /api/decks/{id}/srs */
+export interface DeckSrsPayload {
+  dueCount: number;
+  newCount: number;
+  masteredCount: number;
+  cards: CardSrsItem[];
+}
+
+export interface CardSrsItem {
+  cardId: number;
+  status: CardSrsStatus;
+  nextReview: string | null;
+  due: boolean;
+}
+
 /** One row in "my students" or "my teachers" list. */
 export interface StudentLink {
   linkId: number;

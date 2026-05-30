@@ -2,10 +2,12 @@ package com.lexora.controller;
 
 import com.lexora.dto.Dto;
 import com.lexora.entity.Card;
+import com.lexora.entity.CardProgress;
 import com.lexora.entity.Deck;
 import com.lexora.entity.DeckShare;
 import com.lexora.entity.TeacherStudent;
 import com.lexora.entity.User;
+import com.lexora.repository.CardProgressRepository;
 import com.lexora.repository.CardRepository;
 import com.lexora.repository.DeckRepository;
 import com.lexora.repository.DeckShareRepository;
@@ -21,8 +23,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -31,6 +36,7 @@ public class DeckController {
 
     @Autowired private DeckRepository deckRepository;
     @Autowired private CardRepository cardRepository;
+    @Autowired private CardProgressRepository progressRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private DeckShareRepository deckShareRepository;
     @Autowired private TeacherStudentRepository teacherStudentRepository;
@@ -80,6 +86,68 @@ public class DeckController {
             }
         }
         return ResponseEntity.ok(mapToResponse(deck));
+    }
+
+    /** Per-card SRS state for filters and badges on the deck page. */
+    @GetMapping("/{id}/srs")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getDeckSrs(@PathVariable Long id, Authentication auth) {
+        Deck deck = deckRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Deck not found"));
+        User user = getUser(auth);
+
+        if (deck.getVisibility() == Deck.Visibility.PRIVATE) {
+            boolean isOwner = deck.getOwner().getId().equals(user.getId());
+            boolean isShared = deckShareRepository.existsByDeckAndUser(deck, user);
+            if (!isOwner && !isShared) {
+                return ResponseEntity.status(403).body(new Dto.MessageResponse("Access denied", false));
+            }
+        }
+
+        List<Card> cards = cardRepository.findByDeckOrderBySortOrder(deck);
+        List<CardProgress> progressRows = progressRepository.findByUserAndCardDeck(user, deck);
+        Map<Long, CardProgress> byCardId = new HashMap<>();
+        for (CardProgress cp : progressRows) {
+            if (cp.getCard() != null) {
+                byCardId.put(cp.getCard().getId(), cp);
+            }
+        }
+
+        LocalDate today = LocalDate.now();
+        int dueCount = 0;
+        int masteredCount = 0;
+        List<Dto.CardSrsItem> items = cards.stream().map(card -> {
+            CardProgress cp = byCardId.get(card.getId());
+            if (cp == null) {
+                return Dto.CardSrsItem.builder()
+                        .cardId(card.getId())
+                        .status("NOT_STARTED")
+                        .nextReview(null)
+                        .due(false)
+                        .build();
+            }
+            boolean due = cp.getNextReview() != null && !cp.getNextReview().isAfter(today);
+            String status = cp.getStatus() != null ? cp.getStatus().name() : "LEARNING";
+            return Dto.CardSrsItem.builder()
+                    .cardId(card.getId())
+                    .status(status)
+                    .nextReview(cp.getNextReview() != null ? cp.getNextReview().toString() : null)
+                    .due(due)
+                    .build();
+        }).collect(Collectors.toList());
+
+        for (Dto.CardSrsItem item : items) {
+            if (item.due) dueCount++;
+            if ("MASTERED".equals(item.status)) masteredCount++;
+        }
+        int newCount = (int) items.stream().filter(i -> "NOT_STARTED".equals(i.status)).count();
+
+        return ResponseEntity.ok(Dto.DeckSrsResponse.builder()
+                .dueCount(dueCount)
+                .newCount(newCount)
+                .masteredCount(masteredCount)
+                .cards(items)
+                .build());
     }
 
     @PostMapping

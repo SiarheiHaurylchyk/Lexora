@@ -8,6 +8,7 @@ import com.lexora.repository.CardRepository;
 import com.lexora.repository.DeckRepository;
 import com.lexora.repository.TeacherMaterialSaveRepository;
 import com.lexora.repository.UserRepository;
+import com.lexora.util.CefrLevels;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,14 +40,23 @@ public class MaterialsController {
     public ResponseEntity<?> catalog(@RequestParam(defaultValue = "0") int page,
                                       @RequestParam(defaultValue = "20") int size,
                                       @RequestParam(required = false) String q,
-                                      @RequestParam(defaultValue = "popular") String sort) {
+                                      @RequestParam(defaultValue = "popular") String sort,
+                                      @RequestParam(required = false) String cefr) {
         Sort s = "new".equalsIgnoreCase(sort)
                 ? Sort.by(Sort.Direction.DESC, "createdAt")
                 : Sort.by(Sort.Direction.DESC, "studyCount");
         PageRequest pr = PageRequest.of(page, size, s);
+        String cefrNorm = cefr != null && !cefr.trim().isEmpty()
+                ? CefrLevels.normalize(cefr.trim()) : null;
         Page<Deck> result;
         if (q != null && !q.trim().isEmpty()) {
             result = deckRepository.searchMaterialsCatalog(q.trim(), pr);
+        } else if (cefrNorm != null) {
+            if ("OTHER".equalsIgnoreCase(cefrNorm)) {
+                result = deckRepository.findCatalogWithoutCefr(Deck.Visibility.PUBLIC, pr);
+            } else {
+                result = deckRepository.findCatalogByCefr(Deck.Visibility.PUBLIC, cefrNorm, pr);
+            }
         } else {
             result = deckRepository.findByListedInMaterialsCatalogTrueAndVisibility(
                     Deck.Visibility.PUBLIC, pr);
@@ -147,8 +157,7 @@ public class MaterialsController {
             deck.setCatalogPriceCents(Math.max(0, req.catalogPriceCents));
         }
         if (req.cefrLevel != null) {
-            String c = req.cefrLevel.trim();
-            deck.setCefrLevel(c.isEmpty() ? null : (c.length() > 32 ? c.substring(0, 32) : c));
+            deck.setCefrLevel(CefrLevels.normalize(req.cefrLevel));
         }
         deck.setUpdatedAt(java.time.LocalDateTime.now());
         deckRepository.save(deck);
@@ -185,6 +194,7 @@ public class MaterialsController {
                 .username(user.getUsername())
                 .displayName(user.getDisplayName())
                 .avatarUrl(user.getAvatarUrl())
+                .role(user.getRole() != null ? user.getRole().name() : null)
                 .build();
     }
 

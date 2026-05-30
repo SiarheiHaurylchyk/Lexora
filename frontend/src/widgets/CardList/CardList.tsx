@@ -1,39 +1,42 @@
 import { useTranslation } from 'react-i18next';
 
-import { CardEditorForm } from './CardEditorForm';
-import { CardRow } from './CardRow';
+import { CardListEmptyState } from './CardListEmptyState';
+import { CardListHeader } from './CardListHeader';
+import { CardListItem } from './CardListItem';
 import type { CardForm } from './types';
 
-interface Props {
-  /** Все карточки колоды в форме редактора. */
+interface CardListProps {
   cards: CardForm[];
-  /** Индекс открытой в inline-редакторе карточки; null — все свёрнуты. */
+  /** Index of the card whose inline editor is open; `null` = all collapsed. */
   activeCardIdx: number | null;
   sourceLanguage: string;
   targetLanguage: string;
-  /** Создать пустую карточку и открыть её редактор. */
+  /** Create an empty card and open its editor. */
   onAdd: () => void;
-  /** Открыть inline-редактор у выбранной карточки. */
-  onOpen: (idx: number) => Promise<void>;
-  /** Закрыть редактор (с тихим автосохранением заполненной карточки). */
-  onClose: (idx: number) => Promise<void>;
-  /** Сохранить карточку на сервере; вернуть true при успехе. */
-  onSave: (idx: number) => Promise<boolean>;
-  /** Удалить карточку (на сервере и из списка). */
-  onDelete: (idx: number) => void;
-  /** Изменить значение одного поля карточки. */
-  onUpdate: (idx: number, field: keyof CardForm, value: string) => void;
-  /** Показать панель массового импорта. */
+  /** Open the inline editor for the card at the given index. */
+  onOpen: (cardIndex: number) => Promise<void>;
+  /** Close the editor for the card at the given index (with silent autosave). */
+  onClose: (cardIndex: number) => Promise<void>;
+  /** Save the card on the server; resolves to `true` on success. */
+  onSave: (cardIndex: number) => Promise<boolean>;
+  /** Delete the card (on the server and from the local list). */
+  onDelete: (cardIndex: number) => void;
+  /** Change one field of the card at the given index. */
+  onUpdate: (
+    cardIndex: number,
+    fieldName: keyof CardForm,
+    newValue: string,
+  ) => void;
+  /** Show the bulk import side panel. */
   onShowBulk: () => void;
 }
 
 /**
- * Виджет «Список карточек колоды».
+ * Widget "Deck cards list".
  *
- * Каждая карточка отображается одной строкой (CardRow). При клике строка
- * раскрывается в полноценный редактор (CardEditorForm). Сразу одна
- * карточка может быть «активной» — этим управляет родитель через
- * `activeCardIdx` и колбэки `onOpen` / `onClose`.
+ * Each card is shown as one row (CardRow). Clicking a row opens the full
+ * inline editor (CardEditorForm). At any moment only one card can be
+ * "active" — the parent controls this via `activeCardIdx`.
  */
 export function CardList({
   cards,
@@ -47,86 +50,41 @@ export function CardList({
   onDelete,
   onUpdate,
   onShowBulk,
-}: Props) {
+}: CardListProps) {
   const { t } = useTranslation();
-  const isEmpty = cards.length === 0;
+  const hasNoCards = cards.length === 0;
 
   return (
     <div>
-      {/* Заголовок секции и две кнопки: массовый импорт и добавление одной карточки */}
-      <div className='mb-4 flex flex-wrap items-center justify-between gap-2.5'>
-        <h2 className='font-display m-0 text-lg'>
-          {t('editDeck.cardsTitle', { count: cards.length })}
-        </h2>
-        <div className='flex gap-2.5'>
-          <button
-            type='button'
-            className='btn btn-secondary btn-sm'
-            onClick={onShowBulk}
-          >
-            {t('editDeck.bulkImport')}
-          </button>
-          <button
-            type='button'
-            className='btn btn-primary btn-sm'
-            onClick={onAdd}
-          >
-            {t('editDeck.addCard')}
-          </button>
-        </div>
-      </div>
+      <CardListHeader
+        cardCount={cards.length}
+        onAddCard={onAdd}
+        onShowBulkImport={onShowBulk}
+      />
 
-      {isEmpty ? (
-        // Пустое состояние: предложение добавить первую карточку
-        <div className='border-border2 bg-surface rounded-[20px] border-2 border-dashed px-6 py-[60px] text-center'>
-          <div className='mb-4 text-5xl'>🃏</div>
-          <p className='text-text3 mb-5'>{t('editDeck.noCardsBody')}</p>
-          <div className='flex justify-center gap-3'>
-            <button
-              type='button'
-              className='btn btn-secondary'
-              onClick={onShowBulk}
-            >
-              {t('editDeck.bulkImport')}
-            </button>
-            <button type='button' className='btn btn-primary' onClick={onAdd}>
-              {t('editDeck.addFirst')}
-            </button>
-          </div>
-        </div>
+      {hasNoCards ? (
+        <CardListEmptyState
+          onAddFirstCard={onAdd}
+          onShowBulkImport={onShowBulk}
+        />
       ) : (
         <div className='flex flex-col gap-2.5'>
-          {cards.map((card, idx) => {
-            const isActive = activeCardIdx === idx;
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  'border-border bg-surface overflow-hidden rounded-[12px] border transition-colors duration-200',
-                  isActive && 'border-brand',
-                )}
-              >
-                {isActive ? (
-                  <CardEditorForm
-                    card={card}
-                    sourceLanguage={sourceLanguage}
-                    targetLanguage={targetLanguage}
-                    onUpdate={(field, value) => onUpdate(idx, field, value)}
-                    onSave={() => onSave(idx)}
-                    onClose={() => onClose(idx)}
-                    onDelete={() => onDelete(idx)}
-                  />
-                ) : (
-                  <CardRow
-                    card={card}
-                    sourceLanguage={sourceLanguage}
-                    onOpen={() => void onOpen(idx)}
-                    onDelete={() => onDelete(idx)}
-                  />
-                )}
-              </div>
-            );
-          })}
+          {cards.map((card, cardIndex) => (
+            <CardListItem
+              key={cardIndex}
+              card={card}
+              isOpenForEditing={activeCardIdx === cardIndex}
+              sourceLanguage={sourceLanguage}
+              targetLanguage={targetLanguage}
+              onOpen={() => void onOpen(cardIndex)}
+              onClose={() => onClose(cardIndex)}
+              onSave={() => onSave(cardIndex)}
+              onDelete={() => onDelete(cardIndex)}
+              onUpdate={(fieldName, newValue) =>
+                onUpdate(cardIndex, fieldName, newValue)
+              }
+            />
+          ))}
 
           <button
             type='button'

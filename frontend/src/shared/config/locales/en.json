@@ -403,6 +403,44 @@
       "openSchedule": "Open schedule"
     }
   },
+  "combinedStudy": {
+    "button": "Combined training",
+    "title": "Train with several decks",
+    "hint": "Pick 2 or more decks. Cards are mixed for one session — decks stay separate.",
+    "selected": "{{count}} selected",
+    "needTwo": "Select at least 2 decks",
+    "langMismatch": "All selected decks must share the same language pair",
+    "noCards": "Selected decks have no cards",
+    "badge": "Combined"
+  },
+  "srs": {
+    "dueToday": "Due today",
+    "bannerTitle": "{{count}} words ready for review",
+    "bannerHint": "Spaced repetition keeps vocabulary in long-term memory — review due cards first.",
+    "reviewNow": "Review now",
+    "reviewDeck": "Review due ({{count}})",
+    "loadingReview": "Loading review queue…",
+    "globalReviewTitle": "Due review · all decks",
+    "noDue": "No cards due for review in this deck",
+    "noDueGlobal": "Nothing to review right now — you're all caught up!",
+    "statsDue": "⏰ Due: {{count}}",
+    "statsNew": "✨ New: {{count}}",
+    "statsMastered": "✓ Mastered: {{count}}",
+    "filter": {
+      "all": "All",
+      "due": "Due",
+      "new": "New",
+      "learning": "Learning",
+      "mastered": "Mastered"
+    },
+    "status": {
+      "new": "New",
+      "learning": "Learning",
+      "familiar": "Familiar",
+      "known": "Known",
+      "mastered": "Mastered"
+    }
+  },
   "explore": {
     "title": "Explore Decks ✦",
     "subtitle": "Discover public flashcard decks from the Lexora community.",
@@ -600,7 +638,8 @@
       "DRAG": "🔀 Drag & Match",
       "SCRAMBLE": "🔤 Scramble",
       "GRAVITY": "☄️ Gravity",
-      "EXAM": "📝 Exam"
+      "EXAM": "📝 Exam",
+      "REVIEW": "🧠 Review"
     },
     "flashcard": {
       "reveal": "{{lang}} — click to reveal",
@@ -950,7 +989,13 @@
     "free": "FREE",
     "priceUsd": "{{amount}} USD",
     "sourceCommunity": "Community",
+    "sourcePlatform": "Lexora",
     "sourceYours": "Yours",
+    "sectionPlatform": "From Lexora",
+    "sectionCommunity": "From teachers",
+    "levelFilterAll": "All levels",
+    "levelDeckCount": "{{count}} decks",
+    "cefrNone": "No level specified",
     "study": "Study",
     "addToLibrary": "Add to my library",
     "inLibrary": "In library",
@@ -981,6 +1026,48 @@
     "whiteboardsSoon": "Whiteboards will appear here in a future update.",
     "classContextTitle": "Class context",
     "classContextBody": "Use “Share with student” to give your linked learner access to this deck for studying together."
+  },
+  "cefr": {
+    "A0": {
+      "short": "A0",
+      "title": "A0 · Pre-beginner",
+      "subtitle": "First contact with the language"
+    },
+    "A1": {
+      "short": "A1",
+      "title": "A1 · Beginner",
+      "subtitle": "Breakthrough — everyday words and phrases"
+    },
+    "A2": {
+      "short": "A2",
+      "title": "A2 · Elementary",
+      "subtitle": "Waystage — simple conversations and routines"
+    },
+    "B1": {
+      "short": "B1",
+      "title": "B1 · Intermediate",
+      "subtitle": "Threshold — travel, work, and familiar topics"
+    },
+    "B2": {
+      "short": "B2",
+      "title": "B2 · Upper intermediate",
+      "subtitle": "Vantage — fluent discussion on many subjects"
+    },
+    "C1": {
+      "short": "C1",
+      "title": "C1 · Advanced",
+      "subtitle": "Effective operational proficiency"
+    },
+    "C2": {
+      "short": "C2",
+      "title": "C2 · Proficiency",
+      "subtitle": "Mastery — near-native vocabulary range"
+    },
+    "OTHER": {
+      "short": "Other",
+      "title": "Other levels",
+      "subtitle": "Materials without a CEFR tag"
+    }
   },
   "share": {
     "title": "Share \"{{title}}\"",

@@ -45,6 +45,6 @@ public class StudySession {
     private List<CardProgress> cardProgresses;
 
     public enum StudyMode {
-        FLASHCARD, LEARN, MATCH, SPELL, DRAG, SCRAMBLE, GRAVITY, TEST, EXAM
+        FLASHCARD, LEARN, MATCH, SPELL, DRAG, SCRAMBLE, GRAVITY, TEST, EXAM, REVIEW
     }
 }

@@ -27,6 +27,8 @@ import type {
   ClassroomWorkspacePayload,
   DeckItem,
   DeckShare,
+  DueReviewPayload,
+  DueSummary,
   LessonBlockItem,
   LessonBlockType,
   LessonItem,
@@ -353,7 +355,9 @@ export const studyApi = {
     api.post(`/study/sessions/${sessionId}/complete`),
   getHistory: () => api.get('/study/history'),
   getStats: () => api.get('/study/stats'),
-  getDueCards: () => api.get('/study/due-cards'),
+  getDueCards: () => api.get<number[]>('/study/due-cards'),
+  getDueSummary: () => api.get<DueSummary>('/study/due-summary'),
+  getDueReview: () => api.get<DueReviewPayload>('/study/due-review'),
 };
 
 /* ------------------------------- Students -------------------------------- */
@@ -476,6 +480,7 @@ export const materialsApi = {
     size?: number;
     q?: string;
     sort?: 'popular' | 'new';
+    cefr?: string;
   }) => api.get<Paged<DeckItem>>('/materials/catalog', { params }),
   personal: () => api.get<MaterialsPersonalViewDTO>('/materials/personal'),
   saveCatalogDeck: (deckId: number) =>

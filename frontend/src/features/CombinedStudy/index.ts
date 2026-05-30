@@ -1,0 +1,1 @@
+export { CombinedStudyModal } from './CombinedStudyModal';

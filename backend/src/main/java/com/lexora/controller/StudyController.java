@@ -1,7 +1,11 @@
 package com.lexora.controller;
 
 import com.lexora.dto.Dto;
-import com.lexora.entity.*;
+import com.lexora.entity.Card;
+import com.lexora.entity.CardProgress;
+import com.lexora.entity.Deck;
+import com.lexora.entity.StudySession;
+import com.lexora.entity.User;
 import com.lexora.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,7 +16,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -174,6 +181,67 @@ public class StudyController {
                 .filter(cp -> cp.getCard() != null)
                 .map(cp -> cp.getCard().getId())
                 .collect(Collectors.toList()));
+    }
+
+    /** Due counts per deck — powers the decks dashboard banner. */
+    @GetMapping("/due-summary")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getDueSummary(Authentication auth) {
+        User user = getUser(auth);
+        List<CardProgress> due = progressRepository.findDueWithCards(user, LocalDate.now());
+
+        Map<Long, Dto.DueDeckBucket> buckets = new LinkedHashMap<>();
+        for (CardProgress cp : due) {
+            if (cp.getCard() == null || cp.getCard().getDeck() == null) continue;
+            Deck deck = cp.getCard().getDeck();
+            Dto.DueDeckBucket bucket = buckets.computeIfAbsent(deck.getId(), id -> Dto.DueDeckBucket.builder()
+                    .deckId(deck.getId())
+                    .deckTitle(deck.getTitle())
+                    .emoji(deck.getEmoji())
+                    .dueCount(0)
+                    .build());
+            bucket.dueCount++;
+        }
+
+        List<Dto.DueDeckBucket> deckList = new ArrayList<>(buckets.values());
+        int total = deckList.stream().mapToInt(b -> b.dueCount).sum();
+        return ResponseEntity.ok(Dto.DueSummaryResponse.builder()
+                .totalDue(total)
+                .decks(deckList)
+                .build());
+    }
+
+    /** All due cards with term/definition — global review session. */
+    @GetMapping("/due-review")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getDueReview(Authentication auth) {
+        User user = getUser(auth);
+        List<CardProgress> due = progressRepository.findDueWithCards(user, LocalDate.now());
+        List<Dto.DueReviewCardDTO> cards = due.stream()
+                .filter(cp -> cp.getCard() != null)
+                .map(cp -> {
+                    Card card = cp.getCard();
+                    Deck deck = card.getDeck();
+                    return Dto.DueReviewCardDTO.builder()
+                            .cardId(card.getId())
+                            .deckId(deck != null ? deck.getId() : null)
+                            .deckTitle(deck != null ? deck.getTitle() : null)
+                            .sourceLanguage(deck != null ? deck.getSourceLanguage() : "en")
+                            .targetLanguage(deck != null ? deck.getTargetLanguage() : "ru")
+                            .term(card.getTerm())
+                            .definition(card.getDefinition())
+                            .example(card.getExample())
+                            .transcription(card.getTranscription())
+                            .termImageUrl(card.getTermImageUrl())
+                            .definitionImageUrl(card.getDefinitionImageUrl())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(Dto.DueReviewResponse.builder()
+                .totalDue(cards.size())
+                .cards(cards)
+                .build());
     }
 
     /** Streak, daily heatmap, and earned badges. Used by the Progress page on the SPA. */

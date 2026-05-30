@@ -19,6 +19,17 @@ public interface DeckRepository extends JpaRepository<Deck, Long> {
     Page<Deck> findByListedInMaterialsCatalogTrueAndVisibility(
             Deck.Visibility visibility, Pageable pageable);
 
+    @Query("SELECT d FROM Deck d WHERE d.listedInMaterialsCatalog = true AND d.visibility = :visibility "
+            + "AND d.cefrLevel = :cefr")
+    Page<Deck> findCatalogByCefr(@Param("visibility") Deck.Visibility visibility,
+                                 @Param("cefr") String cefr,
+                                 Pageable pageable);
+
+    @Query("SELECT d FROM Deck d WHERE d.listedInMaterialsCatalog = true AND d.visibility = :visibility "
+            + "AND (d.cefrLevel IS NULL OR TRIM(d.cefrLevel) = '')")
+    Page<Deck> findCatalogWithoutCefr(@Param("visibility") Deck.Visibility visibility,
+                                      Pageable pageable);
+
     @Query("SELECT d FROM Deck d WHERE d.listedInMaterialsCatalog = true AND d.visibility = 'PUBLIC' AND "
             + "(LOWER(d.title) LIKE LOWER(CONCAT('%', :q, '%')) OR "
             + "LOWER(d.description) LIKE LOWER(CONCAT('%', :q, '%')))")

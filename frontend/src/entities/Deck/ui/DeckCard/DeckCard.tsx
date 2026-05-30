@@ -1,152 +1,86 @@
-import { type CSSProperties, type MouseEvent, useState } from 'react';
-import { toast } from 'react-hot-toast';
-import { useTranslation } from 'react-i18next';
+import { type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { deckApi } from '@/shared/api/api-legacy';
-import type { DeckItem } from '@/shared/api/types';
-import { useConfirm } from '@/shared/lib/confirm';
+import {
+  buildDeckCoverStripStyle,
+  pickDeckAccentColor,
+} from './deckAccentStyles';
+import { DeckCardHeader } from './DeckCardHeader';
+import { DeckCardMenu } from './DeckCardMenu';
+import { DeckCardMeta } from './DeckCardMeta';
+import { DeckCardStudyButtons } from './DeckCardStudyButtons';
+import { useDeleteDeck } from './useDeleteDeck';
 
-const MODE_ORDER = ['FLASHCARD', 'LEARN', 'MATCH'] as const;
+import type { DeckItem } from '@/shared/api/types';
 
 export interface DeckCardProps {
   deck: DeckItem;
+  /** Called after a successful deck delete so the parent list can refresh. */
   onDeleted?: () => void;
+  /** Hide the "⋮" menu (e.g. when browsing a deck owned by someone else). */
   readonly?: boolean;
 }
 
-const cardClasses = tw`group relative cursor-pointer overflow-hidden rounded-[20px] border border-border bg-surface transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-[3px] hover:shadow-[0_12px_32px_rgba(0,0,0,0.3)]`;
+const deckCardClasses = tw`group relative cursor-pointer overflow-hidden rounded-[20px] border border-border bg-surface transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-[3px] hover:shadow-[0_12px_32px_rgba(0,0,0,0.3)]`;
 
+/**
+ * Deck card shown in lists like "My decks" or "Saved decks".
+ *
+ * Clicking anywhere on the card opens the deck page. Owner-only actions
+ * (View / Edit / Delete) live in the small "⋮" menu in the corner. Owners
+ * also see three quick-study buttons at the bottom.
+ */
 export function DeckCard({ deck, onDeleted, readonly }: DeckCardProps) {
-  const { t } = useTranslation();
-  const confirm = useConfirm();
   const navigate = useNavigate();
-  const [showMenu, setShowMenu] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const accentColor = pickDeckAccentColor(deck.coverColor);
+  const hasCards = deck.cardCount > 0;
+  const showOwnerControls = !readonly;
 
-  const handleDelete = async (e: MouseEvent) => {
-    e.stopPropagation();
-    const ok = await confirm({
-      message: t('deckCard.confirmDelete', { title: deck.title }),
-      variant: 'danger',
-      confirmText: t('common.delete'),
-    });
-    if (!ok) return;
-    setDeleting(true);
-    try {
-      await deckApi.deleteDeck(deck.id);
-      toast.success(t('deckCard.deleted'));
-      onDeleted?.();
-    } catch {
-      toast.error(t('deckCard.deleteFailed'));
-    } finally {
-      setDeleting(false);
-    }
+  const { runDelete, isDeleting } = useDeleteDeck({
+    deckId: deck.id,
+    deckTitle: deck.title,
+    onDeleted,
+  });
+
+  const openDeck = () => navigate(`/decks/${deck.id}`);
+
+  const handleDeleteClick = (event: MouseEvent) => {
+    event.stopPropagation();
+    void runDelete();
   };
 
-  const accent: string = deck.coverColor || '#7C3AED';
-  const coverStyle: CSSProperties = {
-    background: `linear-gradient(90deg, ${accent}, ${accent}88)`,
+  const highlightBorderOnHover = (event: MouseEvent<HTMLDivElement>) => {
+    event.currentTarget.style.borderColor = accentColor;
   };
-  const emojiStyle: CSSProperties = {
-    background: `${accent}22`,
-    border: `1px solid ${accent}44`,
+  const resetBorderOnLeave = (event: MouseEvent<HTMLDivElement>) => {
+    event.currentTarget.style.borderColor = '';
   };
 
   return (
     <div
-      className={cardClasses}
-      onClick={() => navigate(`/decks/${deck.id}`)}
-      onMouseEnter={(e) =>
-        ((e.currentTarget as HTMLDivElement).style.borderColor = accent)
-      }
-      onMouseLeave={(e) =>
-        ((e.currentTarget as HTMLDivElement).style.borderColor = '')
-      }
+      className={deckCardClasses}
+      onClick={openDeck}
+      onMouseEnter={highlightBorderOnHover}
+      onMouseLeave={resetBorderOnLeave}
     >
-      <div className='h-1.5' style={coverStyle} />
+      <div className='h-1.5' style={buildDeckCoverStripStyle(accentColor)} />
 
       <div className='px-5 pt-5 pb-4'>
         <div className='mb-3 flex items-start justify-between'>
-          <div className='flex items-center gap-2.5'>
-            <div
-              className='flex h-10 w-10 items-center justify-center rounded-[10px] text-xl'
-              style={emojiStyle}
-            >
-              {deck.emoji || '📚'}
-            </div>
-            <div>
-              <h3 className='font-display text-base leading-[1.2] font-bold'>
-                {deck.title}
-              </h3>
-              <div className='text-text3 mt-0.5 text-xs'>
-                {deck.sourceLanguage} → {deck.targetLanguage}
-              </div>
-            </div>
-          </div>
+          <DeckCardHeader
+            title={deck.title}
+            emoji={deck.emoji}
+            sourceLanguage={deck.sourceLanguage}
+            targetLanguage={deck.targetLanguage}
+            accentColor={accentColor}
+          />
 
-          {!readonly && (
-            <div className='relative'>
-              <button
-                type='button'
-                className='btn btn-ghost btn-icon text-text3 text-lg'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu((v) => !v);
-                }}
-                aria-label={t('deckCard.menu')}
-              >
-                ⋮
-              </button>
-
-              {showMenu && (
-                <>
-                  <div
-                    className='fixed inset-0 z-10'
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                    }}
-                  />
-                  <div className='border-border2 bg-bg3 absolute top-full right-0 z-20 mt-1 min-w-[140px] rounded-[10px] border p-1.5 shadow-[var(--shadow)]'>
-                    {[
-                      {
-                        label: t('deckCard.view'),
-                        action: () => navigate(`/decks/${deck.id}`),
-                        danger: false,
-                      },
-                      {
-                        label: t('deckCard.edit'),
-                        action: () => navigate(`/decks/${deck.id}/edit`),
-                        danger: false,
-                      },
-                      {
-                        label: t('deckCard.del'),
-                        action: handleDelete,
-                        danger: true,
-                      },
-                    ].map(({ label, action, danger }) => (
-                      <button
-                        type='button'
-                        key={label}
-                        className={cn(
-                          'btn btn-ghost text-text w-full justify-start rounded-md px-2.5 py-1.5 text-[13px]',
-                          danger && 'text-danger',
-                        )}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowMenu(false);
-                          action(e as Any);
-                        }}
-                        disabled={deleting}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+          {showOwnerControls && (
+            <DeckCardMenu
+              deckId={deck.id}
+              isDeleting={isDeleting}
+              onDelete={handleDeleteClick}
+            />
           )}
         </div>
 
@@ -156,46 +90,13 @@ export function DeckCard({ deck, onDeleted, readonly }: DeckCardProps) {
           </p>
         )}
 
-        <div className='mb-4 flex items-center gap-4'>
-          <span className='text-text2 flex items-center gap-1 text-[13px]'>
-            🃏 <strong>{deck.cardCount}</strong> {t('deckCard.cards')}
-          </span>
-          {(deck.studyCount ?? 0) > 0 && (
-            <span className='text-text3 text-[13px]'>
-              ▶ {deck.studyCount} {t('common.sessions')}
-            </span>
-          )}
-          <span
-            className={cn(
-              'ml-auto rounded-full px-2 py-0.5 text-[11px]',
-              deck.visibility === 'PUBLIC'
-                ? 'bg-success-dim text-success'
-                : 'bg-bg4 text-text3',
-            )}
-          >
-            {deck.visibility === 'PUBLIC'
-              ? t('common.public')
-              : t('common.private')}
-          </span>
-        </div>
+        <DeckCardMeta
+          cardCount={deck.cardCount}
+          studyCount={deck.studyCount}
+          visibility={deck.visibility}
+        />
 
-        {deck.cardCount > 0 && (
-          <div className='flex gap-1.5'>
-            {MODE_ORDER.map((mode) => (
-              <button
-                type='button'
-                key={mode}
-                className='btn btn-secondary btn-sm flex-1 justify-center px-2 py-1.5 text-xs'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/decks/${deck.id}/study/${mode}`);
-                }}
-              >
-                {t(`deckCard.modes.${mode}`)}
-              </button>
-            ))}
-          </div>
-        )}
+        {hasCards && <DeckCardStudyButtons deckId={deck.id} />}
       </div>
     </div>
   );

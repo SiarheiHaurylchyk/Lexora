@@ -1,14 +1,20 @@
-import { type CSSProperties, useEffect, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { CardSrsBadge } from '@ui';
 
 import { ShareDeckModal } from '@/features/ShareDeck';
 
-import type { CardItem, DeckItem } from '@/shared/api/types';
+import type { CardItem, DeckItem, DeckSrsPayload } from '@/shared/api/types';
 import { shouldShowSpeakButton, useSpeech } from '@/shared/hooks/useSpeech';
 import { userCanTeach } from '@/shared/lib/accountRole';
 import { useApiQuery } from '@/shared/lib/query';
+import {
+  buildSrsMap,
+  type CardSrsFilter,
+  matchesSrsFilter,
+} from '@/shared/lib/srs';
 import { useAuthStore } from '@/shared/lib/storeHooks';
 
 const STUDY_MODES = [
@@ -35,6 +41,7 @@ export function DeckPage() {
   const [studyDir, setStudyDir] = useState<'forward' | 'reverse' | 'mixed'>(
     'forward',
   );
+  const [cardFilter, setCardFilter] = useState<CardSrsFilter>('all');
 
   const deckId = Number(id);
   const deckQuery = useApiQuery<DeckItem>({
@@ -42,7 +49,23 @@ export function DeckPage() {
     url: `/decks/${deckId}`,
     enabled: Number.isFinite(deckId),
   });
+  const srsQuery = useApiQuery<DeckSrsPayload>({
+    queryKey: ['srs', deckId],
+    url: `/decks/${deckId}/srs`,
+    enabled: Number.isFinite(deckId) && !!user,
+  });
   const deck = deckQuery.data ?? null;
+  const srs = srsQuery.data ?? null;
+  const srsMap = buildSrsMap(srs?.cards ?? []);
+  const learningCount = useMemo(() => {
+    if (!srs) return 0;
+    return srs.cards.filter(
+      (c) =>
+        c.status === 'LEARNING' ||
+        c.status === 'FAMILIAR' ||
+        c.status === 'KNOWN',
+    ).length;
+  }, [srs]);
   const loading = deckQuery.isLoading;
   useEffect(() => {
     if (deckQuery.isError) {
@@ -66,11 +89,13 @@ export function DeckPage() {
   if (!deck) return null;
   const isOwner = user?.id === deck.owner?.id;
   const canShareDeck = isOwner && userCanTeach(user?.role);
-  const filtered = (deck.cards || []).filter(
-    (c: CardItem) =>
-      c.term.toLowerCase().includes(searchQ.toLowerCase()) ||
-      c.definition.toLowerCase().includes(searchQ.toLowerCase()),
-  );
+  const filtered = (deck.cards || []).filter((c: CardItem) => {
+    const q = searchQ.toLowerCase();
+    const matchesSearch =
+      c.term.toLowerCase().includes(q) ||
+      c.definition.toLowerCase().includes(q);
+    return matchesSearch && matchesSrsFilter(c.id, cardFilter, srsMap);
+  });
 
   const accent: string = deck.coverColor || '#7C3AED';
   const heroStyle: CSSProperties = {
@@ -157,6 +182,30 @@ export function DeckPage() {
 
           {deck.cardCount > 0 && (
             <div>
+              {srs && (
+                <div className='mb-4 flex flex-wrap items-center gap-2'>
+                  <span className='badge badge-warning'>
+                    {t('srs.statsDue', { count: srs.dueCount })}
+                  </span>
+                  <span className='badge badge-brand'>
+                    {t('srs.statsNew', { count: srs.newCount })}
+                  </span>
+                  <span className='badge badge-success'>
+                    {t('srs.statsMastered', { count: srs.masteredCount })}
+                  </span>
+                  {srs.dueCount > 0 && (
+                    <button
+                      type='button'
+                      className='btn btn-primary btn-sm ml-auto'
+                      onClick={() =>
+                        navigate(`/decks/${id}/study/REVIEW?dir=${studyDir}`)
+                      }
+                    >
+                      {t('srs.reviewDeck', { count: srs.dueCount })}
+                    </button>
+                  )}
+                </div>
+              )}
               <p className='text-text3 mb-2 text-[11px] font-semibold tracking-[0.12em] uppercase'>
                 {t('deck.direction.label')}
               </p>
@@ -249,10 +298,37 @@ export function DeckPage() {
         </div>
       </div>
 
-      <div className='mb-5 flex items-center justify-between gap-3'>
+      <div className='mb-5 flex flex-wrap items-center justify-between gap-3'>
         <h2 className='font-display text-xl'>
           {t('deck.cardsTitle', { count: deck.cardCount })}
         </h2>
+        <div className='flex flex-wrap items-center gap-2'>
+          {(
+            [
+              ['all', srs ? deck.cardCount : null],
+              ['due', srs?.dueCount],
+              ['new', srs?.newCount],
+              ['learning', srs ? learningCount : null],
+              ['mastered', srs?.masteredCount],
+            ] as const
+          ).map(([key, count]) => (
+            <button
+              key={key}
+              type='button'
+              className={cn(
+                'btn btn-sm',
+                cardFilter === key ? 'btn-primary' : 'btn-secondary',
+              )}
+              onClick={() => setCardFilter(key)}
+            >
+              {t(`srs.filter.${key}`)}
+              {count != null ? ` (${count})` : ''}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className='mb-5 flex justify-end'>
         <div className='relative'>
           <span className='text-text3 absolute top-1/2 left-3 -translate-y-1/2 text-sm'>
             🔍
@@ -306,7 +382,15 @@ export function DeckPage() {
                 </div>
               )}
               <div>
-                <div className='text-[15px] font-medium'>{card.term}</div>
+                <div className='flex flex-wrap items-center gap-2'>
+                  <div className='text-[15px] font-medium'>{card.term}</div>
+                  {srs && srsMap.has(card.id) && (
+                    <CardSrsBadge
+                      status={srsMap.get(card.id)!.status}
+                      due={srsMap.get(card.id)!.due}
+                    />
+                  )}
+                </div>
                 {card.transcription && (
                   <div className='text-text3 mt-0.5 text-xs'>
                     {card.transcription}

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { StudyModeProps } from './types';
 
 import type { CardItem } from '@/shared/api/types';
+import { speakEnglishIfPossible, useSpeech } from '@/shared/hooks/useSpeech';
 import { mistakeResult, okResult } from '@/shared/lib/studyResults';
 import { sendStudyAnswer } from '@/shared/lib/studySession';
 
@@ -36,6 +37,7 @@ function MatchRound({
   onComplete,
 }: MatchRoundProps) {
   const { t } = useTranslation();
+  const { speak } = useSpeech();
 
   // Найденные верные пары (ключ — `pair${termIdx}`)
   const [matchedKeys, setMatchedKeys] = useState<Set<string>>(new Set());
@@ -76,6 +78,10 @@ function MatchRound({
     // Этот элемент уже сопоставлен — игнорируем
     const cardIdxOfClick = side === 'term' ? idx : originalIdx!;
     if (matchedKeys.has(`pair${cardIdxOfClick}`)) return;
+
+    const clickedText =
+      side === 'term' ? terms[idx].text : shuffledDefs[idx].text;
+    speakEnglishIfPossible(speak, clickedText);
 
     // Первый клик в паре — просто запоминаем выбор
     if (!selected) {

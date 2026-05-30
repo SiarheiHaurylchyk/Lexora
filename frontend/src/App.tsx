@@ -17,8 +17,10 @@ import { AssignmentsPage } from '@/pages/AssignmentsPage';
 import { BecomeTeacherPage } from '@/pages/BecomeTeacherPage';
 import { ChatPage } from '@/pages/ChatPage';
 import { ClassroomPage } from '@/pages/ClassroomPage';
+import { CombinedStudyPage } from '@/pages/CombinedStudyPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DeckPage } from '@/pages/DeckPage';
+import { DueReviewPage } from '@/pages/DueReviewPage';
 import { EditDeckPage } from '@/pages/EditDeckPage';
 import { ExplorePage } from '@/pages/ExplorePage';
 import { HomeHubPage } from '@/pages/HomeHubPage';
@@ -143,6 +145,11 @@ export default function App() {
                 <Route path='/decks/:id' element={<DeckPage />} />
                 <Route path='/decks/:id/edit' element={<EditDeckPage />} />
                 <Route path='/decks/:id/study/:mode' element={<StudyPage />} />
+                <Route
+                  path='/study/combined/:mode'
+                  element={<CombinedStudyPage />}
+                />
+                <Route path='/study/due-review' element={<DueReviewPage />} />
                 <Route path='/profile' element={<ProfilePage />} />
                 <Route path='/settings' element={<SettingsPage />} />
                 {/* Quick deep-link aliases used by the user-menu dropdown. */}

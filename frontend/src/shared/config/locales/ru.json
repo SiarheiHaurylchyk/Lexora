@@ -404,6 +404,44 @@
       "openSchedule": "Расписание"
     }
   },
+  "combinedStudy": {
+    "button": "Объединённая тренировка",
+    "title": "Тренировка по нескольким колодам",
+    "hint": "Выберите 2 или больше колод. Карточки смешаются в одной сессии — сами колоды не объединяются.",
+    "selected": "Выбрано: {{count}}",
+    "needTwo": "Выберите минимум 2 колоды",
+    "langMismatch": "У всех выбранных колод должна быть одна пара языков",
+    "noCards": "В выбранных колодах нет карточек",
+    "badge": "Несколько колод"
+  },
+  "srs": {
+    "dueToday": "К повторению",
+    "bannerTitle": "{{count}} слов ждут повторения",
+    "bannerHint": "Интервальное повторение переводит слова в долгую память — начните с карточек «к повторению».",
+    "reviewNow": "Повторить сейчас",
+    "reviewDeck": "Повторить ({{count}})",
+    "loadingReview": "Загрузка очереди…",
+    "globalReviewTitle": "Повторение · все колоды",
+    "noDue": "В этой колоде нет карточек к повторению",
+    "noDueGlobal": "Сейчас нечего повторять — вы всё успели!",
+    "statsDue": "⏰ К повтору: {{count}}",
+    "statsNew": "✨ Новые: {{count}}",
+    "statsMastered": "✓ Освоено: {{count}}",
+    "filter": {
+      "all": "Все",
+      "due": "К повтору",
+      "new": "Новые",
+      "learning": "В процессе",
+      "mastered": "Освоено"
+    },
+    "status": {
+      "new": "Новая",
+      "learning": "Учу",
+      "familiar": "Знакомо",
+      "known": "Знаю",
+      "mastered": "Освоено"
+    }
+  },
   "explore": {
     "title": "Обзор колод ✦",
     "subtitle": "Публичные колоды сообщества Lexora.",
@@ -610,7 +648,8 @@
       "DRAG": "🔀 Перетащи",
       "SCRAMBLE": "🔤 Собери слово",
       "GRAVITY": "☄️ Гравитация",
-      "EXAM": "📝 Экзамен"
+      "EXAM": "📝 Экзамен",
+      "REVIEW": "🧠 Повторение"
     },
     "flashcard": {
       "reveal": "{{lang}} — нажмите, чтобы открыть",
@@ -960,7 +999,13 @@
     "free": "БЕСПЛАТНО",
     "priceUsd": "{{amount}} USD",
     "sourceCommunity": "Сообщество",
+    "sourcePlatform": "Lexora",
     "sourceYours": "Ваше",
+    "sectionPlatform": "От Lexora",
+    "sectionCommunity": "От учителей",
+    "levelFilterAll": "Все уровни",
+    "levelDeckCount": "{{count}} колод",
+    "cefrNone": "Без указания уровня",
     "study": "Учить",
     "addToLibrary": "В мою библиотеку",
     "inLibrary": "В библиотеке",
@@ -991,6 +1036,48 @@
     "whiteboardsSoon": "Интерактивные доски появятся в следующих версиях.",
     "classContextTitle": "Контекст класса",
     "classContextBody": "Кнопка «Открыть ученику» выдаёт доступ к колоде связанному ученику для совместных занятий."
+  },
+  "cefr": {
+    "A0": {
+      "short": "A0",
+      "title": "A0 · До начального",
+      "subtitle": "Первое знакомство с языком"
+    },
+    "A1": {
+      "short": "A1",
+      "title": "A1 · Начальный",
+      "subtitle": "Breakthrough — базовые слова и фразы"
+    },
+    "A2": {
+      "short": "A2",
+      "title": "A2 · Элементарный",
+      "subtitle": "Waystage — простые диалоги и быт"
+    },
+    "B1": {
+      "short": "B1",
+      "title": "B1 · Средний",
+      "subtitle": "Threshold — путешествия, работа, знакомые темы"
+    },
+    "B2": {
+      "short": "B2",
+      "title": "B2 · Выше среднего",
+      "subtitle": "Vantage — свободное обсуждение многих тем"
+    },
+    "C1": {
+      "short": "C1",
+      "title": "C1 · Продвинутый",
+      "subtitle": "Effective operational proficiency"
+    },
+    "C2": {
+      "short": "C2",
+      "title": "C2 · Владение",
+      "subtitle": "Mastery — словарный запас близкий к носителю"
+    },
+    "OTHER": {
+      "short": "Другие",
+      "title": "Без уровня CEFR",
+      "subtitle": "Материалы без метки уровня"
+    }
   },
   "share": {
     "title": "Поделиться «{{title}}»",

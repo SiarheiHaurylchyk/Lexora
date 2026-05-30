@@ -15,11 +15,13 @@ import {
   Star,
 } from 'lucide-react';
 
+import { CombinedStudyModal } from '@/features/CombinedStudy';
 import { CreateDeckModal } from '@/features/CreateDeck';
+import { DueReviewBanner } from '@/features/DueReviewBanner';
 
 import { DeckCard } from '@/entities/Deck';
 
-import type { DeckItem } from '@/shared/api/types';
+import type { DeckItem, DueSummary } from '@/shared/api/types';
 import { useApiQuery } from '@/shared/lib/query';
 import { useAuthStore } from '@/shared/lib/storeHooks';
 
@@ -43,6 +45,7 @@ export function MyDecksPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreate, setShowCreate] = useState(false);
+  const [showCombinedStudy, setShowCombinedStudy] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const queryClient = useQueryClient();
 
@@ -56,6 +59,17 @@ export function MyDecksPage() {
   const decksQuery = useApiQuery<DeckItem[]>({
     queryKey: ['decks', 'my'],
     url: '/decks/my',
+  });
+  const dueSummaryQuery = useApiQuery<DueSummary>({
+    queryKey: ['srs', 'due-summary'],
+    url: '/study/due-summary',
+  });
+  const statsQuery = useApiQuery<{
+    masteredCards: number;
+    studyStreak: number;
+  }>({
+    queryKey: ['study', 'stats'],
+    url: '/study/stats',
   });
   const decks = decksQuery.data ?? [];
   const loading = decksQuery.isLoading;
@@ -75,6 +89,7 @@ export function MyDecksPage() {
   });
 
   const totalCards = decks.reduce((sum, d) => sum + (d.cardCount || 0), 0);
+  const playableDecksCount = decks.filter((d) => (d.cardCount ?? 0) > 0).length;
 
   const hour = new Date().getHours();
   const greeting =
@@ -87,8 +102,14 @@ export function MyDecksPage() {
   const stats = [
     { labelKey: 'dashboard.totalDecks', value: decks.length },
     { labelKey: 'dashboard.totalCards', value: totalCards },
-    { labelKey: 'dashboard.studyStreak', value: '—' },
-    { labelKey: 'dashboard.mastered', value: '—' },
+    {
+      labelKey: 'srs.dueToday',
+      value: dueSummaryQuery.data?.totalDue ?? 0,
+    },
+    {
+      labelKey: 'dashboard.mastered',
+      value: statsQuery.data?.masteredCards ?? 0,
+    },
   ];
 
   return (
@@ -115,6 +136,8 @@ export function MyDecksPage() {
               })}
         </p>
       </div>
+
+      <DueReviewBanner />
 
       <div className='mb-10 grid grid-cols-4 gap-4 max-[900px]:grid-cols-2'>
         {stats.map(({ labelKey, value }, i) => {
@@ -167,6 +190,15 @@ export function MyDecksPage() {
           </span>
           {t('dashboard.newDeckBtn').replace(/^\+\s*/, '')}
         </Button>
+        {playableDecksCount >= 2 && (
+          <Button
+            type='button'
+            variant='secondary'
+            onClick={() => setShowCombinedStudy(true)}
+          >
+            {t('combinedStudy.button')}
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -220,6 +252,13 @@ export function MyDecksPage() {
             setShowCreate(false);
             navigate(`/decks/${deck.id}/edit`);
           }}
+        />
+      )}
+
+      {showCombinedStudy && (
+        <CombinedStudyModal
+          decks={decks}
+          onClose={() => setShowCombinedStudy(false)}
         />
       )}
     </div>

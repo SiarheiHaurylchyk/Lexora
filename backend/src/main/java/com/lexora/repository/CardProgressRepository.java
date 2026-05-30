@@ -20,6 +20,10 @@ public interface CardProgressRepository extends JpaRepository<CardProgress, Long
     @Query("SELECT cp FROM CardProgress cp WHERE cp.user = :user AND cp.nextReview <= :today")
     List<CardProgress> findDueCards(@Param("user") User user, @Param("today") LocalDate today);
 
+    @Query("SELECT cp FROM CardProgress cp JOIN FETCH cp.card c JOIN FETCH c.deck d "
+            + "WHERE cp.user = :user AND cp.nextReview <= :today ORDER BY cp.nextReview ASC")
+    List<CardProgress> findDueWithCards(@Param("user") User user, @Param("today") LocalDate today);
+
     @Query("SELECT COUNT(cp) FROM CardProgress cp WHERE cp.user = :user AND cp.status = 'MASTERED'")
     long countMasteredByUser(@Param("user") User user);
 }
