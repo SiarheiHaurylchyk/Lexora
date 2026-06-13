@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import type { DeckMeta } from '@/widgets/DeckSettings';
 
@@ -76,7 +77,14 @@ export function useDeckEditor() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const deckId = Number(id);
+
+  /** Обновить кэш колоды после изменения карточек — иначе на странице просмотра останутся старые данные. */
+  const refreshDeckCache = () => {
+    void queryClient.invalidateQueries({ queryKey: ['deck', deckId] });
+    void queryClient.invalidateQueries({ queryKey: ['decks', 'my'] });
+  };
 
   // Запрос колоды с сервера через TanStack Query
   const deckQuery = useApiQuery<DeckItem>({
@@ -198,6 +206,7 @@ export function useDeckEditor() {
         });
         if (!opts?.silent) toast.success(t('editDeck.cardUpdated'));
       }
+      refreshDeckCache();
       return true;
     } catch (e) {
       toast.error(getApiErrorMessage(e) ?? t('editDeck.cardSaveFailed'));
@@ -219,6 +228,7 @@ export function useDeckEditor() {
     }
     setCards((prev) => prev.filter((_, i) => i !== idx));
     if (activeCardIdx === idx) setActiveCardIdx(null);
+    refreshDeckCache();
   };
 
   /**
@@ -257,6 +267,7 @@ export function useDeckEditor() {
   /** Добавить карточки в список после успешного массового импорта. */
   const appendImportedCards = (newCards: CardForm[]) => {
     setCards((prev) => [...prev, ...newCards]);
+    refreshDeckCache();
   };
 
   return {

@@ -1,25 +1,45 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Shuffle, Timer, TimerOff } from 'lucide-react';
 
 import { FlashcardAnswerButtons } from './FlashcardAnswerButtons';
-import { FlashcardNavArrow } from './FlashcardNavArrow';
 import { FlashcardScene } from './FlashcardScene';
-import { ProgressBar } from './ProgressBar';
+import { FlashcardSessionProgress } from './FlashcardSessionProgress';
+import { FlashcardTimer } from './FlashcardTimer';
 import type { StudyModeProps } from './types';
 
 import { useFlashcardKeyboard } from '@/shared/hooks/useFlashcardKeyboard';
 import { speakEnglishIfPossible, useSpeech } from '@/shared/hooks/useSpeech';
+import type { StudyCard } from '@/shared/lib/studyPrompts';
 import { mistakeResult, okResult } from '@/shared/lib/studyResults';
 import { sendStudyAnswer } from '@/shared/lib/studySession';
 
-type StudyAnswer = ReturnType<typeof okResult>;
+/** Секунд на карточку, когда включён таймер скорости. */
+const TIMER_SECONDS_PER_CARD = 10;
 
 /**
- * Study mode "Flashcards".
+ * Одна карточка в очереди сессии.
+ * `isRepeat` === true, если карточку хотя бы раз отметили «Ещё раз»
+ * и она вернулась на повтор.
+ */
+interface QueuedCard {
+  card: StudyCard;
+  isRepeat: boolean;
+}
+
+/**
+ * Режим «Flashcards» — очередь с повторами и опциональным таймером.
  *
- * Big 3D card the user can flip (click or space). Once flipped, three
- * rating buttons appear (Hard / Okay / Easy). The rating is sent to the
- * server for SM-2 spaced repetition and stored in the session results.
+ * Логика (как в Quizlet / Anki):
+ * - Все карточки стартуют в очереди в исходном порядке.
+ * - «Ещё раз» (Сложно) → карточка в КОНЕЦ очереди, вернётся снова.
+ * - «Знаю» (Легко) → карточка навсегда убирается из очереди.
+ * - Сессия заканчивается, когда очередь пуста.
+ * - Карточки с повторами попадают в итоги как «нужно повторить».
+ *
+ * Доп. кнопки (справа сверху):
+ * - 🔀 Shuffle — перемешать оставшуюся очередь.
+ * - ⏱ Timer  — опциональный отсчёт 10 с; по истечении → авто «Ещё раз».
  */
 export function FlashcardMode({
   cards,
@@ -30,109 +50,221 @@ export function FlashcardMode({
   const { t } = useTranslation();
   const { speak } = useSpeech();
 
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [isCardFlipped, setIsCardFlipped] = useState(false);
-  const [collectedAnswers, setCollectedAnswers] = useState<StudyAnswer[]>([]);
+  const totalOriginalCards = cards.length;
 
-  const currentCard = cards[currentCardIndex];
-  const hasPreviousCard = currentCardIndex > 0;
-  const hasNextCard = currentCardIndex < cards.length - 1;
-  const isLastCard = currentCardIndex + 1 >= cards.length;
+  // ── Очередь ───────────────────────────────────────────────────────────────
+  const [cardQueue, setCardQueue] = useState<QueuedCard[]>(() =>
+    cards.map((card) => ({ card, isRepeat: false })),
+  );
+
+  // ── Статистика сессии ─────────────────────────────────────────────────────
+  const [masteredCount, setMasteredCount] = useState(0);
+  // Id карточек, хотя бы раз отмеченных «Ещё раз» (для экрана итогов).
+  const [hardCardIdSet, setHardCardIdSet] = useState<Set<number>>(
+    () => new Set(),
+  );
+  // Сколько раз каждая карточка показывалась (с повторами) — для avg-attempts.
+  const [attemptsPerCardId, setAttemptsPerCardId] = useState<
+    Map<number, number>
+  >(() => new Map());
+
+  // ── UI-состояние ──────────────────────────────────────────────────────────
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
+  // true ~450 мс после «Ещё раз», чтобы проигралась CSS-анимация shake.
+  const [isShaking, setIsShaking] = useState(false);
+  // true — над карточкой показывается 10-секундный таймер.
+  const [isTimerEnabled, setIsTimerEnabled] = useState(false);
+
+  // ── Производные значения ──────────────────────────────────────────────────
+  const currentQueueItem = cardQueue[0];
+  const currentCard = currentQueueItem?.card;
+  const repeatQueueCount = cardQueue.filter((item) => item.isRepeat).length;
 
   const flipCard = () => setIsCardFlipped((wasFlipped) => !wasFlipped);
 
-  const goToPreviousCard = () => {
-    if (!hasPreviousCard) return;
-    setCurrentCardIndex((index) => index - 1);
+  /** Случайно перемешать оставшиеся карточки в очереди. */
+  const reshuffleQueue = () => {
+    setCardQueue((queue) => [...queue].sort(() => Math.random() - 0.5));
     setIsCardFlipped(false);
   };
 
-  const goToNextCard = () => {
-    if (!hasNextCard) return;
-    setCurrentCardIndex((index) => index + 1);
+  /**
+   * Отметить текущую карточку «Ещё раз» — в конец очереди.
+   *
+   * @param withShake  false при автовызове (например, таймер),
+   *                   чтобы анимация не играла на уже сменившейся карточке.
+   */
+  const markCardAsHard = (withShake = true) => {
+    if (!currentCard) return;
+
+    sendStudyAnswer(sessionId, currentCard.id, false, 1);
+
+    // Запоминаем «сложную» карточку (для итогов) и увеличиваем счётчик попыток.
+    setHardCardIdSet((prev) => {
+      const updated = new Set(prev);
+      updated.add(currentCard.id);
+      return updated;
+    });
+    setAttemptsPerCardId((prev) => {
+      const updated = new Map(prev);
+      updated.set(currentCard.id, (updated.get(currentCard.id) ?? 1) + 1);
+      return updated;
+    });
+
+    // Shake-анимация как тактильная обратная связь «ошибка».
+    if (withShake) {
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 450);
+    }
+
+    // С передней позиции — в конец очереди.
+    setCardQueue((queue) => {
+      const [head, ...tail] = queue;
+      return [...tail, { ...head, isRepeat: true }];
+    });
+
     setIsCardFlipped(false);
   };
 
-  /** Save the answer for the current card and advance (or finish). */
-  const submitAnswer = (isCorrect: boolean, srsRating: number) => {
-    sendStudyAnswer(sessionId, currentCard.id, isCorrect, srsRating);
+  /**
+   * Отметить «Знаю» — убрать карточку из очереди.
+   * При пустой очереди вызывает `onComplete` (конец сессии).
+   */
+  const markCardAsEasy = () => {
+    if (!currentCard) return;
 
-    const newAnswer = isCorrect
-      ? okResult(currentCard.id)
-      : mistakeResult(currentCard.id, currentCard.term, currentCard.definition);
+    sendStudyAnswer(sessionId, currentCard.id, true, 4);
 
-    const answersWithoutPrevious = collectedAnswers.filter(
-      (answer) => answer.cardId !== currentCard.id,
-    );
-    const updatedAnswers = [...answersWithoutPrevious, newAnswer];
-    setCollectedAnswers(updatedAnswers);
+    setMasteredCount((prev) => prev + 1);
+
+    const remainingQueue = cardQueue.slice(1);
     setIsCardFlipped(false);
 
-    setTimeout(() => {
-      if (isLastCard) {
-        onComplete(updatedAnswers);
-      } else {
-        setCurrentCardIndex((index) => index + 1);
-      }
-    }, 200);
+    if (remainingQueue.length === 0) {
+      // Итоги: «сложные» → needs review, остальные → correct.
+      // Плюс число показов каждой карточки для avg-attempts.
+      const finalResults = cards.map((originalCard) => {
+        const attempts = attemptsPerCardId.get(originalCard.id) ?? 1;
+        return hardCardIdSet.has(originalCard.id)
+          ? {
+              ...mistakeResult(
+                originalCard.id,
+                originalCard.term,
+                originalCard.definition,
+              ),
+              attempts,
+            }
+          : { ...okResult(originalCard.id), attempts };
+      });
+
+      setTimeout(() => onComplete(finalResults), 200);
+    } else {
+      setCardQueue(remainingQueue);
+    }
   };
 
+  /**
+   * Таймер скорости дошёл до нуля.
+   * Карточка автоматически «Ещё раз» без shake-анимации.
+   */
+  const handleTimerExpire = () => {
+    markCardAsHard(false);
+  };
+
+  // Озвучивать term или definition при смене видимой стороны.
   useEffect(() => {
+    if (!currentCard) return;
     const textToSpeak = isCardFlipped
       ? currentCard.definition
       : currentCard.term;
     speakEnglishIfPossible(speak, textToSpeak);
-  }, [isCardFlipped, currentCard.term, currentCard.definition, speak]);
+  }, [isCardFlipped, currentCard?.term, currentCard?.definition, speak]);
 
   useFlashcardKeyboard({
     flipped: isCardFlipped,
     onFlip: flipCard,
-    onPrevCard: goToPreviousCard,
-    onNextCard: goToNextCard,
-    onHard: () => submitAnswer(false, 1),
-    onEasy: () => submitAnswer(true, 4),
+    onHard: () => markCardAsHard(),
+    onEasy: markCardAsEasy,
   });
+
+  if (!currentCard) return null;
 
   return (
     <div className='mx-auto w-full max-w-[760px]'>
-      <div className='flex items-center gap-4 max-[640px]:gap-2'>
-        <FlashcardNavArrow
-          direction='prev'
-          isDisabled={!hasPreviousCard}
-          ariaLabel={t('study.flashcard.prevCard')}
-          onClick={goToPreviousCard}
+      {/* ── Progress row + control buttons ─────────────────────────────── */}
+      <div className='mb-5 flex items-center gap-2'>
+        <FlashcardSessionProgress
+          totalOriginalCards={totalOriginalCards}
+          masteredCount={masteredCount}
+          repeatQueueCount={repeatQueueCount}
+          className='min-w-0 flex-1'
         />
 
-        <div className='flex min-w-0 flex-1 flex-col'>
-          <ProgressBar
-            idx={currentCardIndex}
-            total={cards.length}
-            showPercent
-          />
+        {/* Shuffle button */}
+        <button
+          type='button'
+          title={t('study.flashcard.shuffle')}
+          className='btn btn-ghost btn-sm shrink-0 px-2'
+          onClick={reshuffleQueue}
+        >
+          <Shuffle size={16} aria-hidden />
+        </button>
 
-          <div className='mb-4'>
-            <FlashcardScene
-              card={currentCard}
-              deck={deck}
-              isFlipped={isCardFlipped}
-              onFlip={flipCard}
-            />
-          </div>
+        {/* Speed-timer toggle */}
+        <button
+          type='button'
+          title={
+            isTimerEnabled
+              ? t('study.flashcard.timerOff')
+              : t('study.flashcard.timerOn')
+          }
+          className={cn(
+            'btn btn-sm shrink-0 px-2',
+            isTimerEnabled ? 'btn-primary' : 'btn-ghost',
+          )}
+          onClick={() => setIsTimerEnabled((on) => !on)}
+        >
+          {isTimerEnabled ? (
+            <TimerOff size={16} aria-hidden />
+          ) : (
+            <Timer size={16} aria-hidden />
+          )}
+        </button>
+      </div>
 
-          <p className='text-text3 mb-4 text-center text-xs'>
-            {t('study.flashcard.keyboardHint')}
-          </p>
+      {/* ── Speed timer bar ─────────────────────────────────────────────── */}
+      {isTimerEnabled && (
+        <FlashcardTimer
+          secondsTotal={TIMER_SECONDS_PER_CARD}
+          isRunning={!isCardFlipped && !isShaking}
+          resetToken={currentCard.id}
+          onTimeUp={handleTimerExpire}
+        />
+      )}
 
-          {isCardFlipped && <FlashcardAnswerButtons onAnswer={submitAnswer} />}
-        </div>
-
-        <FlashcardNavArrow
-          direction='next'
-          isDisabled={!hasNextCard}
-          ariaLabel={t('study.flashcard.nextCard')}
-          onClick={goToNextCard}
+      {/* ── 3D flip card ────────────────────────────────────────────────── */}
+      <div className='mb-4'>
+        <FlashcardScene
+          card={currentCard}
+          deck={deck}
+          isFlipped={isCardFlipped}
+          isRepeat={currentQueueItem.isRepeat}
+          isShaking={isShaking}
+          onFlip={flipCard}
         />
       </div>
+
+      <p className='text-text3 mb-4 text-center text-xs'>
+        {t('study.flashcard.keyboardHint')}
+      </p>
+
+      {/* ── Answer buttons (visible only after flip) ─────────────────── */}
+      {isCardFlipped && (
+        <FlashcardAnswerButtons
+          onHard={() => markCardAsHard()}
+          onEasy={markCardAsEasy}
+        />
+      )}
     </div>
   );
 }

@@ -13,7 +13,35 @@ import { buildCardLookup, type ModeResult } from '@/shared/lib/studyResults';
 
 export type DueReviewPhase = 'study' | 'result';
 
-/** Сессия глобального повторения всех due-карточек. */
+/**
+ * Прочитать опциональные фильтры из query-string (передаёт SmartReviewModal):
+ *   ?limit=10        → взять только первые 10 due-карточек
+ *   ?decks=1,3,7     → только карточки из указанных колод
+ *   ?dir=reverse     → направление reverse / mixed
+ */
+function readReviewFiltersFromUrl(): {
+  limit: number | null;
+  deckIds: Set<number> | null;
+  dir: 'forward' | 'reverse' | 'mixed';
+} {
+  const params = new URLSearchParams(window.location.search);
+
+  const rawLimit = params.get('limit');
+  const limit = rawLimit ? Math.max(1, parseInt(rawLimit, 10)) : null;
+
+  const rawDecks = params.get('decks');
+  const deckIds =
+    rawDecks && rawDecks.trim()
+      ? new Set(rawDecks.split(',').map(Number))
+      : null;
+
+  const rawDir = params.get('dir');
+  const dir = rawDir === 'reverse' || rawDir === 'mixed' ? rawDir : 'forward';
+
+  return { limit, deckIds, dir };
+}
+
+/** Хук сессии для глобальной страницы due-review. */
 export function useDueReviewSession() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -47,23 +75,44 @@ export function useDueReviewSession() {
       return;
     }
 
-    const shuffled = [...dueReviewToCardItems(payload.cards)].sort(
-      () => Math.random() - 0.5,
-    );
-    const first = payload.cards[0];
+    // Выбор пользователя из URL (задаёт SmartReviewModal).
+    const { limit, deckIds, dir } = readReviewFiltersFromUrl();
+
+    // Шаг 1: фильтр по выбранным колодам (если выбрано подмножество).
+    const filteredByDeck =
+      deckIds !== null
+        ? payload.cards.filter((c) => deckIds.has(c.deckId))
+        : payload.cards;
+
+    if (filteredByDeck.length === 0) {
+      toast.error(t('srs.noDueGlobal'));
+      navigate('/decks');
+      return;
+    }
+
+    // Шаг 2: shuffle перед slice, чтобы лимит давал случайную выборку,
+    //         а не всегда первые N карточек из порядка БД.
+    const shuffled = [...filteredByDeck].sort(() => Math.random() - 0.5);
+
+    // Шаг 3: лимит количества карточек из модалки.
+    const sliced = limit !== null ? shuffled.slice(0, limit) : shuffled;
+
+    const cardItems = dueReviewToCardItems(sliced);
+
+    const first = sliced[0];
     const virtualDeck: DeckItem = {
       id: first.deckId,
       title: t('srs.globalReviewTitle'),
       sourceLanguage: first.sourceLanguage,
       targetLanguage: first.targetLanguage,
       visibility: 'PRIVATE',
-      cardCount: shuffled.length,
-      cards: shuffled,
+      cardCount: cardItems.length,
+      cards: cardItems,
     };
 
     setDeck(virtualDeck);
-    setRawCards(shuffled);
-    setCards(applyStudyDirection(shuffled, 'forward'));
+    setRawCards(cardItems);
+    setCards(applyStudyDirection(cardItems, dir));
 
     let cancelled = false;
     void (async () => {
@@ -100,7 +149,7 @@ export function useDueReviewSession() {
       try {
         await studyApi.completeSession(sessionId);
       } catch {
-        // ignore
+        // Не критично — всё равно показываем экран итогов.
       }
     }
     void queryClient.invalidateQueries({ queryKey: ['srs'] });

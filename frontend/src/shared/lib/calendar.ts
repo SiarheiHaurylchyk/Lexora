@@ -97,6 +97,43 @@ export function formatHalfHourLabel(h: number, m: number): string {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
 
+/** Whether a given Date falls on today (local time). */
+export function isToday(date: Date): boolean {
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
+/** Duration of a slot in whole minutes. */
+export function slotDurationMinutes(startIso: string, endIso: string): number {
+  return Math.round(
+    (new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000,
+  );
+}
+
+/**
+ * Human-readable "time until lesson starts" using the browser's
+ * `Intl.RelativeTimeFormat` — locale-aware (EN/RU/etc.), no extra i18n keys needed.
+ * Returns null when the start time has already passed.
+ */
+export function timeUntilLabel(
+  startIso: string,
+  locale: string,
+): string | null {
+  const diffMs = new Date(startIso).getTime() - Date.now();
+  if (diffMs <= 0) return null;
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 60) return rtf.format(diffMins, 'minute');
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return rtf.format(diffHours, 'hour');
+  const diffDays = Math.floor(diffHours / 24);
+  return rtf.format(diffDays, 'day');
+}
+
 /** Group slots by their local date-string (yyyy-mm-dd). */
 export function groupByDate<T extends { startTime: string }>(
   items: T[],

@@ -70,7 +70,19 @@ export function useStudySession() {
     url: `/decks/${deckId}/srs`,
     enabled: Number.isFinite(deckId) && isReview,
   });
+
+  // Отдельный лёгкий запрос только для баннера «X карточек к повтору».
+  // Для не-REVIEW сессий, чтобы не дублировать fetch.
+  const dueBannerQuery = useApiQuery<DeckSrsPayload>({
+    queryKey: ['srs', deckId, 'banner'],
+    url: `/decks/${deckId}/srs`,
+    enabled: Number.isFinite(deckId) && !isReview,
+  });
+
   const deck = deckQuery.data ?? null;
+
+  /** Сколько SM-2-карточек к повтору — для баннера «учиться по расписанию». */
+  const dueCount = isReview ? 0 : (dueBannerQuery.data?.dueCount ?? 0);
 
   // Словарь cardId → {term, definition} — нужен для экрана ошибок
   const cardLookup = useMemo(
@@ -176,6 +188,8 @@ export function useStudySession() {
     cardLookup,
     mode,
     deckUrlId: id,
+    /** Сколько SM-2-карточек к повтору. Ненулевое только для не-REVIEW сессий. */
+    dueCount,
     handleComplete,
     handleRetry,
   };

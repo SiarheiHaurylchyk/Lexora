@@ -12,6 +12,19 @@ export function lessonSectionsSorted(
   return [...raw].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 }
 
+/** Sections with `sectionId` filled on every block (API may omit it). */
+export function lessonSectionsWithBlockIds(
+  lesson: LessonItem | null | undefined,
+): LessonSectionItem[] {
+  return lessonSectionsSorted(lesson).map((section) => ({
+    ...section,
+    blocks: (section.blocks ?? []).map((block) => ({
+      ...block,
+      sectionId: block.sectionId ?? section.id,
+    })),
+  }));
+}
+
 export function flattenLessonBlocks(
   lesson: LessonItem | null | undefined,
 ): LessonBlockItem[] {

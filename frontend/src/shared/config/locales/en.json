@@ -1,5 +1,9 @@
 {
-  "lang": { "en": "English", "ru": "Русский", "switch": "Language" },
+  "lang": {
+    "en": "English",
+    "ru": "Русский",
+    "switch": "Language"
+  },
   "common": {
     "cancel": "Cancel",
     "save": "Save",
@@ -159,7 +163,13 @@
     "recordingAllowed": "Recording allowed — both you and the teacher agreed.",
     "recordingWaiting": "Recording is allowed only when both sides agree.",
     "transcriptionHint": "Transcripts: optional — you can share text or files in chat after the lesson.",
-    "cancellationPolicyHint": "Payment is arranged directly with the teacher (outside Lexora). You can cancel on your own more than 24 hours before the start — otherwise contact the teacher."
+    "cancellationPolicyHint": "Payment is arranged directly with the teacher (outside Lexora). You can cancel on your own more than 24 hours before the start — otherwise contact the teacher.",
+    "sectionUpcoming": "Upcoming ({{count}})",
+    "sectionPast": "Past ({{count}})",
+    "showPast": "Show past lessons ({{count}})",
+    "hidePast": "Hide past lessons",
+    "durationMin": "{{count}} min",
+    "policyNote": "Lessons may be recorded with mutual consent. Cancellations are free more than 24 hours before the lesson."
   },
   "notifications": {
     "title": "Notifications",
@@ -262,7 +272,21 @@
     "responsePlaceholderText": "Type your answer…",
     "responsePlaceholderAudio": "Paste a link to your voice note (Telegram, Drive, etc.)…",
     "responsePlaceholderReadAloud": "Notes for your read-aloud (optional)…",
-    "studentReply": "Student reply"
+    "studentReply": "Student reply",
+    "createNew": "New assignment",
+    "filterAll": "All",
+    "filterOpen": "Open",
+    "filterDone": "Done",
+    "filterOverdue": "Overdue",
+    "filterNoMatch": "No assignments match this filter.",
+    "statusOverdue": "Overdue",
+    "statusDueSoon": "Due soon",
+    "statsOpen": "{{count}} open",
+    "statsOverdue": "{{count}} overdue",
+    "statsDone": "{{count}} done",
+    "collapseResponse": "Hide response field",
+    "titlePlaceholder": "e.g. Read Unit 3 and answer questions",
+    "instructionsPlaceholder": "Step-by-step instructions, links, or notes for the student…"
   },
   "reminders": {
     "toastTitle": "Upcoming lesson",
@@ -439,6 +463,23 @@
       "familiar": "Familiar",
       "known": "Known",
       "mastered": "Mastered"
+    },
+    "modal": {
+      "title": "Start spaced-repetition review",
+      "totalDue": "{{count}} cards are ready for review",
+      "howMany": "How many cards?",
+      "allCount": "All ({{count}})",
+      "byDecks": "Which decks?",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "dueCards": "{{count}} due",
+      "direction": "Study direction",
+      "dir.forward": "Term → Def",
+      "dir.reverse": "Def → Term",
+      "dir.mixed": "↔ Mixed",
+      "tipTitle": "Pro tip",
+      "tipBody": "Start with 10–20 cards per session. Shorter sessions with higher frequency beat marathon reviews.",
+      "start": "Start — {{count}} cards →"
     }
   },
   "explore": {
@@ -499,18 +540,44 @@
     "pronounceDef": "Pronounce definition",
     "pronounceDefSlow": "Pronounce definition (slow)",
     "modes": {
-      "FLASHCARD": { "label": "Flashcards", "desc": "Flip & review" },
-      "LEARN": { "label": "Learn", "desc": "Guided learning" },
-      "MATCH": { "label": "Match", "desc": "Drag to match" },
-      "SPELL": { "label": "Spell", "desc": "Type it out" },
-      "DRAG": { "label": "Drag", "desc": "Drag & Match" },
-      "SCRAMBLE": { "label": "Scramble", "desc": "Build the word" },
-      "GRAVITY": { "label": "Gravity", "desc": "Tap the match as words fall" },
-      "EXAM": { "label": "Exam", "desc": "Mixed quiz — results at the end" }
+      "FLASHCARD": {
+        "label": "Flashcards",
+        "desc": "Flip & review"
+      },
+      "LEARN": {
+        "label": "Learn",
+        "desc": "Guided learning"
+      },
+      "MATCH": {
+        "label": "Match",
+        "desc": "Drag to match"
+      },
+      "SPELL": {
+        "label": "Spell",
+        "desc": "Type it out"
+      },
+      "DRAG": {
+        "label": "Drag",
+        "desc": "Drag & Match"
+      },
+      "SCRAMBLE": {
+        "label": "Scramble",
+        "desc": "Build the word"
+      },
+      "GRAVITY": {
+        "label": "Gravity",
+        "desc": "Tap the match as words fall"
+      },
+      "EXAM": {
+        "label": "Exam",
+        "desc": "Mixed quiz — results at the end"
+      }
     },
     "direction": {
       "label": "Direction",
-      "mixed": "↔ Mixed"
+      "mixed": "↔ Mixed",
+      "forwardHint": "term → translation",
+      "reverseHint": "translation → term"
     }
   },
   "editDeck": {
@@ -647,7 +714,15 @@
       "translationLabel": "{{lang}} — translation",
       "prevCard": "Previous card",
       "nextCard": "Next card",
-      "keyboardHint": "Tap the card • Space — flip • Keyboard ← →: before flip — previous/next card; after flip — hard / easy (“Normal” — button only)"
+      "keyboardHint": "Click the card or Space to flip • After flip: ← Again  /  → Got it",
+      "again": "🔁 Again",
+      "know": "✓ Got it",
+      "repeatBadge": "repeat",
+      "masteredCount": "{{count}} got it",
+      "repeatCount": "{{count}} to repeat",
+      "shuffle": "Shuffle remaining cards",
+      "timerOn": "Enable speed timer (10 s per card)",
+      "timerOff": "Disable speed timer"
     },
     "learn": {
       "prompt": "WHAT IS THE TRANSLATION OF",
@@ -710,8 +785,11 @@
       "expected": "Correct answer",
       "yourAnswer": "Your answer",
       "backToDeck": "Back to deck",
-      "again": "Study again →"
-    }
+      "again": "Study again →",
+      "avgAttempts": "Avg. attempts per card"
+    },
+    "dueCardsBanner": "{{count}} cards are due for spaced-repetition review",
+    "startReview": "Study by schedule →"
   },
   "languages": {
     "en": "English 🇬🇧",
@@ -1150,8 +1228,15 @@
       "extraNotesPh": "e.g. Watch the video twice and write 5 sentences…",
       "send": "Send as homework",
       "sentToast": "Homework sent — your student will see it under Assignments",
-      "sendFailed": "Could not send homework"
-    }
+      "sendFailed": "Could not send homework",
+      "selectAll": "Select all blocks",
+      "deselectAll": "Deselect all",
+      "selectSection": "Select section",
+      "deselectSection": "Deselect section",
+      "selectedCount": "{{count}} selected"
+    },
+    "draftLabel": "Draft",
+    "blockCount": "{{count}} blocks"
   },
   "lesson": {
     "empty": "This lesson is empty.",
@@ -1253,7 +1338,10 @@
     "matchStudentHint": "For each term on the left, choose its match on the right.",
     "fillBlankNoGaps": "This exercise has no gaps yet — the teacher should add ___ in the text.",
     "wordOrderSwapHint": "Tap two chips to swap.",
-    "yourAnswer": "Your answer"
+    "yourAnswer": "Your answer",
+    "youtubeMissing": "No video link saved yet. The teacher needs to paste a YouTube URL and click Save block.",
+    "youtubeUnsavedHint": "Students will not see this video until you click Save block.",
+    "youtubeUrlRequired": "Paste a YouTube link before saving."
   },
   "teachers": {
     "directory": {
@@ -1364,7 +1452,8 @@
       "favoriteAria": "Save teacher to favourites",
       "favoriteFailed": "Could not update favourites",
       "cancellationHeading": "Cancellation",
-      "paymentHeading": "Payment"
+      "paymentHeading": "Payment",
+      "notFoundHint": "This profile is unavailable or the teacher is hidden from the directory."
     },
     "card": {
       "defaultHeadline": "Lexora teacher",
@@ -1554,7 +1643,11 @@
     "badgeEarned": "Earned",
     "less": "less",
     "more": "more",
-    "day": { "mon": "Mon", "wed": "Wed", "fri": "Fri" },
+    "day": {
+      "mon": "Mon",
+      "wed": "Wed",
+      "fri": "Fri"
+    },
     "badge": {
       "first_step": {
         "name": "First step",
@@ -1684,7 +1777,14 @@
       "shiftTogether": "Shift my slot and all overlapping blocks",
       "overlapDismiss": "Go back and change time",
       "onlyThisHint": "To change only this lesson without moving others, pick a window that does not cross another block—or reschedule the other lesson first."
-    }
+    },
+    "prevWeek": "Previous week",
+    "nextWeek": "Next week",
+    "statsOpen": "{{count}} open",
+    "statsBooked": "{{count}} booked",
+    "statsBlocked": "{{count}} personal",
+    "emptyWeekHint": "Click any cell to add a slot",
+    "statusToday": "Today"
   },
   "availabilityViewer": {
     "title": "Availability",

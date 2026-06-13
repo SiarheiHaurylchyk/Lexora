@@ -13,6 +13,10 @@ interface FlashcardSceneProps {
   deck: DeckItem;
   /** When true the card is rotated to show its back side. */
   isFlipped: boolean;
+  /** True when this card has been seen before and is being repeated. */
+  isRepeat: boolean;
+  /** True for ~450 ms after "Again" — triggers the shake animation. */
+  isShaking: boolean;
   /** Click anywhere on the scene to flip the card. */
   onFlip: () => void;
 }
@@ -32,16 +36,25 @@ export function FlashcardScene({
   card,
   deck,
   isFlipped,
+  isRepeat,
+  isShaking,
   onFlip,
 }: FlashcardSceneProps) {
   const frontLanguage = studyCardFrontLang(deck, card);
   const backLanguage = studyCardBackLang(deck, card);
 
   return (
-    <div className={sceneClasses} onClick={onFlip}>
+    <div
+      className={cn(sceneClasses, isShaking && 'animate-shake')}
+      onClick={onFlip}
+    >
       <div className={cn(innerClasses, isFlipped && innerFlippedClasses)}>
         <div className={cn(faceClasses, frontFaceClasses)}>
-          <FlashcardFront card={card} languageLabel={frontLanguage} />
+          <FlashcardFront
+            card={card}
+            languageLabel={frontLanguage}
+            isRepeat={isRepeat}
+          />
         </div>
         <div className={cn(faceClasses, backFaceClasses)}>
           <FlashcardBack card={card} languageLabel={backLanguage} />

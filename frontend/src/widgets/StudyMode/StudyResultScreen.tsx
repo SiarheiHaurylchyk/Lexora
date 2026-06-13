@@ -81,6 +81,13 @@ export function StudyResultScreen({
     totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
   const { titleKey, emoji, gradient } = pickResultPresentation(percent);
 
+  // Average attempts per card — only available when FlashcardMode tracked them.
+  const hasAttemptsData = results.some((r) => r.attempts !== undefined);
+  const avgAttemptsPerCard =
+    hasAttemptsData && totalCount > 0
+      ? results.reduce((sum, r) => sum + (r.attempts ?? 1), 0) / totalCount
+      : null;
+
   return (
     <div className='animate-scale mx-auto w-full max-w-[520px] text-center'>
       <div className='mb-4 text-[88px]'>{emoji}</div>
@@ -101,7 +108,7 @@ export function StudyResultScreen({
         })}
       </p>
 
-      {/* Две плашки: «верно» и «на повтор» */}
+      {/* Stat tiles: correct / to-review / avg attempts */}
       <div className='mb-6 grid grid-cols-2 gap-3'>
         <div className='rounded-[16px] border border-[rgba(16,185,129,0.4)] bg-[rgba(16,185,129,0.10)] p-4'>
           <div className='font-display text-success text-3xl font-bold'>
@@ -115,6 +122,18 @@ export function StudyResultScreen({
           </div>
           <div className='text-text2 text-sm'>{t('common.toReview')}</div>
         </div>
+
+        {/* Average attempts — shown only when FlashcardMode provided the data. */}
+        {avgAttemptsPerCard !== null && avgAttemptsPerCard > 1.05 && (
+          <div className='border-border bg-surface2 col-span-2 rounded-[16px] border p-4'>
+            <div className='font-display text-text text-3xl font-bold'>
+              {avgAttemptsPerCard.toFixed(1)}×
+            </div>
+            <div className='text-text2 text-sm'>
+              {t('study.result.avgAttempts')}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Кнопки: посмотреть ошибки / назад / повторить */}

@@ -15,6 +15,7 @@ import {
   parseJson,
   shuffleIndices,
 } from '@/shared/lib/lessonBlockPayload';
+import { resolveBlockYoutubeUrl } from '@/shared/lib/youtube';
 
 interface Props {
   block: LessonBlockItem;
@@ -55,7 +56,10 @@ export function LessonBlockView({ block }: Props) {
     case 'YOUTUBE':
       return (
         <BlockShell>
-          <YouTubePlayer url={block.content || ''} title={block.title} />
+          <YouTubePlayer
+            url={resolveBlockYoutubeUrl(block)}
+            title={block.title}
+          />
         </BlockShell>
       );
 

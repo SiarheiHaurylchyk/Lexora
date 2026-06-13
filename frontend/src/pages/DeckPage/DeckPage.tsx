@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CardSrsBadge } from '@ui';
 
+import { StudyModeGrid } from '@/widgets/StudyMode';
+
 import { ShareDeckModal } from '@/features/ShareDeck';
 
 import type { CardItem, DeckItem, DeckSrsPayload } from '@/shared/api/types';
@@ -16,17 +18,6 @@ import {
   matchesSrsFilter,
 } from '@/shared/lib/srs';
 import { useAuthStore } from '@/shared/lib/storeHooks';
-
-const STUDY_MODES = [
-  { key: 'FLASHCARD', icon: '⚡' },
-  { key: 'LEARN', icon: '🎯' },
-  { key: 'MATCH', icon: '🧩' },
-  { key: 'SPELL', icon: '✏️' },
-  { key: 'DRAG', icon: '🔀' },
-  { key: 'SCRAMBLE', icon: '🔤' },
-  { key: 'GRAVITY', icon: '☄️' },
-  { key: 'EXAM', icon: '📝' },
-] as const;
 
 const cardRowClasses = tw`grid items-center gap-4 grid-cols-[56px_1fr_1fr_auto] rounded-[12px] border border-border bg-surface px-5 py-4 transition-colors duration-200 hover:border-border2`;
 
@@ -107,7 +98,6 @@ export function DeckPage() {
     background: `${accent}25`,
     border: `1px solid ${accent}44`,
   };
-  const modeBtnStyle: CSSProperties = { border: `1px solid ${accent}44` };
 
   return (
     <div className='box-border w-full py-10'>
@@ -206,11 +196,18 @@ export function DeckPage() {
                   )}
                 </div>
               )}
-              <p className='text-text3 mb-2 text-[11px] font-semibold tracking-[0.12em] uppercase'>
+              <p className='text-text3 mb-2.5 text-[11px] font-semibold tracking-[0.12em] uppercase'>
                 {t('deck.direction.label')}
               </p>
+
+              {/*
+               * Direction segmented control.
+               * Three pill buttons inside a dark container.
+               * Active button: brand gradient + glow shadow.
+               * Inactive button: subtle hover background + text brightens.
+               */}
               <div
-                className='border-border bg-bg/50 mb-4 grid grid-cols-3 gap-1 rounded-2xl border p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+                className='border-border2 bg-bg3/80 mb-5 flex gap-2 rounded-[22px] border p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]'
                 role='group'
                 aria-label={t('deck.direction.label')}
               >
@@ -229,70 +226,72 @@ export function DeckPage() {
                     { id: 'mixed' as const, primary: null, secondary: null },
                   ] as const
                 ).map((opt) => {
-                  const active = studyDir === opt.id;
+                  const isActive = studyDir === opt.id;
                   return (
                     <button
                       key={opt.id}
                       type='button'
                       onClick={() => setStudyDir(opt.id)}
                       className={cn(
-                        'relative flex min-h-[52px] flex-col items-center justify-center rounded-xl px-2 py-2.5 transition-all duration-200',
-                        active
-                          ? 'from-brand to-accent bg-gradient-to-br via-[#6d28d9] text-white shadow-[0_4px_20px_rgba(124,58,237,0.45)]'
-                          : 'text-text2 hover:bg-surface/90 hover:text-text',
+                        'relative flex flex-1 flex-col items-center justify-center gap-1 rounded-[16px] px-3 py-3.5 transition-all duration-200 active:scale-95',
+                        isActive
+                          ? 'from-brand to-accent bg-gradient-to-br via-[#6d28d9] text-white shadow-[0_6px_28px_rgba(124,58,237,0.55)]'
+                          : 'text-text2 hover:bg-bg4 hover:text-text',
                       )}
                     >
                       {opt.id === 'mixed' ? (
                         <>
-                          <span className='text-xl leading-none'>↔</span>
+                          {/* ↔ icon — gets brighter on active */}
                           <span
                             className={cn(
-                              'mt-1 text-[11px] font-semibold',
-                              active ? 'text-white/90' : 'text-text3',
+                              'text-[22px] leading-none transition-transform duration-200',
+                              isActive ? 'text-white' : 'text-text3',
+                            )}
+                          >
+                            ↔
+                          </span>
+                          <span
+                            className={cn(
+                              'text-[11px] font-semibold tracking-wider uppercase',
+                              isActive ? 'text-white/85' : 'text-text3',
                             )}
                           >
                             {t('deck.direction.mixed')}
                           </span>
                         </>
                       ) : (
-                        <span className='font-display flex items-center gap-1.5 text-[15px] font-bold tracking-wide'>
-                          <span className='uppercase'>{opt.primary}</span>
+                        <>
+                          {/* Language pair — e.g. "EN → RU" */}
+                          <span className='font-display flex items-center gap-1.5 text-[15px] font-bold tracking-wide'>
+                            <span className='uppercase'>{opt.primary}</span>
+                            <span
+                              className={cn(
+                                'text-[13px] font-normal',
+                                isActive ? 'text-white/65' : 'text-text3',
+                              )}
+                            >
+                              →
+                            </span>
+                            <span className='uppercase'>{opt.secondary}</span>
+                          </span>
+                          {/* Small hint label */}
                           <span
                             className={cn(
-                              'text-sm font-normal',
-                              active ? 'text-white/75' : 'text-text3',
+                              'text-[10px] font-medium',
+                              isActive ? 'text-white/60' : 'text-text3/70',
                             )}
                           >
-                            →
+                            {opt.id === 'forward'
+                              ? t('deck.direction.forwardHint')
+                              : t('deck.direction.reverseHint')}
                           </span>
-                          <span className='uppercase'>{opt.secondary}</span>
-                        </span>
+                        </>
                       )}
                     </button>
                   );
                 })}
               </div>
-              <div className='grid grid-cols-4 gap-2 max-[900px]:grid-cols-3 max-[520px]:grid-cols-2'>
-                {STUDY_MODES.map(({ key, icon }) => (
-                  <button
-                    key={key}
-                    type='button'
-                    onClick={() =>
-                      navigate(`/decks/${id}/study/${key}?dir=${studyDir}`)
-                    }
-                    className='text-text cursor-pointer rounded-[12px] bg-[rgba(0,0,0,0.3)] p-3 text-center transition-colors duration-200'
-                    style={modeBtnStyle}
-                  >
-                    <div className='mb-1 text-[22px]'>{icon}</div>
-                    <div className='text-[13px] font-semibold'>
-                      {t(`deck.modes.${key}.label`)}
-                    </div>
-                    <div className='text-text3 mt-0.5 text-[11px]'>
-                      {t(`deck.modes.${key}.desc`)}
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <StudyModeGrid deckId={id!} studyDir={studyDir} />
             </div>
           )}
         </div>

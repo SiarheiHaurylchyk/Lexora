@@ -3,6 +3,7 @@ import {
   type FormEvent,
   type ReactNode,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -10,7 +11,7 @@ import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button } from '@ui';
+import { Button, EmptyState, Skeleton, YouTubePlayer } from '@ui';
 import { Heart } from 'lucide-react';
 
 import {
@@ -26,7 +27,6 @@ import {
 import type { TeacherDetail, TeacherReview } from '@/shared/api/types';
 import { useApiQuery } from '@/shared/lib/query';
 import { useAuth } from '@/shared/lib/storeHooks';
-import { getYouTubeEmbedUrl } from '@/shared/lib/youtube';
 
 type ProfileTab = 'about' | 'resume' | 'certs';
 
@@ -39,13 +39,25 @@ const starBtnBase = tw`cursor-pointer border-0 bg-transparent text-2xl text-text
 function normalizeTeacherDetail(raw: TeacherDetail): TeacherDetail {
   return {
     ...raw,
+    displayName: raw.displayName?.trim() || raw.username?.trim() || '—',
+    username: raw.username?.trim() || '',
+    languages: raw.languages ?? [],
     certificates: raw.certificates ?? [],
     recentReviews: raw.recentReviews ?? [],
+    sampleDecks: raw.sampleDecks ?? [],
     reviewCount: raw.reviewCount ?? 0,
     conductedSessionsCount: raw.conductedSessionsCount ?? 0,
+    studentCount: raw.studentCount ?? 0,
+    lessonCount: raw.lessonCount ?? 0,
+    publicDeckCount: raw.publicDeckCount ?? 0,
     offersTrialLesson: raw.offersTrialLesson ?? false,
     favoritedByMe: raw.favoritedByMe ?? false,
   };
+}
+
+function teacherInitialLetter(teacher: TeacherDetail): string {
+  const name = teacher.displayName || teacher.username || '';
+  return name.charAt(0).toUpperCase() || '?';
 }
 
 function TeacherViewerReviewSection({
@@ -148,24 +160,32 @@ export function TeacherDetailPage() {
   const availabilityViewerRef = useRef<AvailabilityViewerHandle>(null);
 
   const teacherId = Number(id);
+  const hasValidTeacherId = Number.isFinite(teacherId) && teacherId > 0;
   const teacherQuery = useApiQuery<TeacherDetail>({
     queryKey: ['teacher', teacherId],
     url: `/teachers/${teacherId}`,
-    enabled: Number.isFinite(teacherId),
-    select: (data) => normalizeTeacherDetail(data),
+    enabled: hasValidTeacherId,
   });
-  const teacher = teacherQuery.data ?? null;
-  const loading = teacherQuery.isLoading;
+  // Нормализуем ПОСЛЕ загрузки — не передаём стрелочную fn в `select`: новая
+  // ссылка на функцию на каждом рендере ломает structural sharing TanStack
+  // Query v5 и вызывает бесконечный цикл ре-рендеров (React error #185).
+  const teacher = useMemo(
+    () =>
+      teacherQuery.data ? normalizeTeacherDetail(teacherQuery.data) : null,
+    [teacherQuery.data],
+  );
+  const loading = teacherQuery.isPending && !teacherQuery.data;
+  const loadFailed = teacherQuery.isError || !hasValidTeacherId;
 
   const reloadTeacher = () =>
     queryClient.invalidateQueries({ queryKey: ['teacher', teacherId] });
 
   useEffect(() => {
-    if (teacherQuery.isError) {
+    if (loadFailed) {
       toast.error(t('teachers.detail.notFound'));
       navigate('/teachers');
     }
-  }, [teacherQuery.isError, navigate, t]);
+  }, [loadFailed, navigate, t]);
 
   const scrollToAvailability = () => {
     availabilityAnchorRef.current?.scrollIntoView({
@@ -177,27 +197,40 @@ export function TeacherDetailPage() {
   if (loading) {
     return (
       <div className='box-border w-full py-10'>
-        <div className='grid grid-cols-[minmax(0,1fr)_minmax(280px,380px)] items-start gap-8'>
+        <Skeleton height={36} width={120} rounded={10} className='mb-6' />
+        <div className='grid grid-cols-[minmax(0,1fr)_minmax(280px,380px)] items-start gap-8 max-[900px]:grid-cols-1'>
           <div className='flex min-w-0 flex-col gap-6'>
-            <div className='skeleton h-[200px] rounded-[16px]' />
-            <div className='skeleton h-[280px] rounded-[16px]' />
+            <Skeleton height={200} rounded={16} />
+            <Skeleton height={280} rounded={16} />
           </div>
           <div className='min-w-0'>
-            <div className='sticky top-5 flex flex-col gap-4'>
-              <div className='skeleton h-[220px] rounded-[16px]' />
-              <div className='skeleton h-[160px] rounded-[16px]' />
-            </div>
+            <Skeleton height={220} rounded={16} />
           </div>
         </div>
       </div>
     );
   }
 
-  if (!teacher) return null;
+  if (!teacher) {
+    return (
+      <div className='box-border w-full py-10'>
+        <Button
+          variant='ghost'
+          onClick={() => navigate('/teachers')}
+          className='mb-6'
+        >
+          {t('common.back')}
+        </Button>
+        <EmptyState
+          icon='🧑‍🏫'
+          title={t('teachers.detail.notFound')}
+          description={t('teachers.detail.notFoundHint')}
+        />
+      </div>
+    );
+  }
 
-  const embed = teacher.introVideoUrl
-    ? getYouTubeEmbedUrl(teacher.introVideoUrl)
-    : null;
+  const introVideoUrl = teacher.introVideoUrl?.trim() ?? '';
   const headline =
     teacher.headline?.trim() || t('teachers.card.defaultHeadline');
   const langs = teacher.languages ?? [];
@@ -343,7 +376,7 @@ export function TeacherDetailPage() {
                 />
               ) : (
                 <div className='border-border2 from-brand to-accent font-display flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-[3px] bg-gradient-to-br text-[40px] font-extrabold text-white'>
-                  {(teacher.displayName || teacher.username)[0].toUpperCase()}
+                  {teacherInitialLetter(teacher)}
                 </div>
               )}
               <div className='min-w-0'>
@@ -495,7 +528,7 @@ export function TeacherDetailPage() {
                         />
                       ) : (
                         <div className='from-brand to-accent flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br text-sm font-bold text-white'>
-                          {r.authorDisplayName[0]?.toUpperCase() ?? '?'}
+                          {(r.authorDisplayName || '?').charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div>
@@ -559,16 +592,14 @@ export function TeacherDetailPage() {
           aria-label={t('teachers.detail.sidebarAria')}
         >
           <div className='sticky top-5 flex flex-col gap-4'>
-            <div className='border-border bg-bg3 aspect-video overflow-hidden rounded-[20px] border [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0'>
-              {embed ? (
-                <iframe
+            <div className='border-border overflow-hidden rounded-[20px] border'>
+              {introVideoUrl ? (
+                <YouTubePlayer
+                  url={introVideoUrl}
                   title={t('teachers.detail.videoTitle')}
-                  src={embed}
-                  allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
-                  allowFullScreen
                 />
               ) : (
-                <div className='text-text3 flex h-full items-center justify-center text-sm'>
+                <div className='text-text3 flex aspect-video items-center justify-center bg-[var(--bg3)] text-sm'>
                   {t('teachers.detail.noVideo')}
                 </div>
               )}

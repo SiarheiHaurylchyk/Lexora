@@ -4,37 +4,47 @@ import { useTranslation } from 'react-i18next';
 import { FLASHCARD_ANSWER_OPTIONS } from './flashcardAnswerOptions';
 
 interface FlashcardAnswerButtonsProps {
-  /** Called with the chosen option's "correct" flag and SRS rating. */
-  onAnswer: (isCorrect: boolean, srsRating: number) => void;
+  /** Called when user marks the card as too hard — it will repeat later. */
+  onHard: () => void;
+  /** Called when user marks the card as known — session moves on. */
+  onEasy: () => void;
 }
 
-const answerButtonClasses = tw`cursor-pointer rounded-[14px] px-5 py-3 text-base font-semibold transition-transform duration-200 hover:-translate-y-0.5`;
+const answerButtonClasses = tw`cursor-pointer rounded-[18px] px-6 py-4 text-lg font-bold transition-all duration-150 hover:-translate-y-0.5 active:scale-95`;
 
 /**
- * Three rating buttons (Hard / Okay / Easy) shown under a flipped card.
- * Picking one of them stores the answer for SM-2 spaced repetition.
+ * Two large answer buttons shown under a flipped flashcard.
+ *
+ * "Again" (red)  — card repeats at the end of the queue.
+ * "Got it" (green) — card is done for this session.
  */
 export function FlashcardAnswerButtons({
-  onAnswer,
+  onHard,
+  onEasy,
 }: FlashcardAnswerButtonsProps) {
   const { t } = useTranslation();
 
+  const handlers: Record<'hard' | 'easy', () => void> = {
+    hard: onHard,
+    easy: onEasy,
+  };
+
   return (
-    <div className='animate-fade grid grid-cols-3 gap-3 max-[640px]:grid-cols-1'>
+    <div className='animate-fade grid grid-cols-2 gap-4'>
       {FLASHCARD_ANSWER_OPTIONS.map(
-        ({ labelKey, isCorrect, srsRating, textColor, backgroundColor }) => {
+        ({ action, labelKey, textColor, backgroundColor }) => {
           const buttonStyle: CSSProperties = {
             background: backgroundColor,
-            border: `1px solid ${textColor}44`,
+            border: `2px solid ${textColor}55`,
             color: textColor,
           };
           return (
             <button
-              key={labelKey}
+              key={action}
               type='button'
               className={answerButtonClasses}
               style={buttonStyle}
-              onClick={() => onAnswer(isCorrect, srsRating)}
+              onClick={handlers[action]}
             >
               {t(labelKey)}
             </button>

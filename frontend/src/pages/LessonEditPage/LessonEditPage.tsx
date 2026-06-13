@@ -257,30 +257,36 @@ export function LessonEditPage() {
   };
 
   const saveBlock = async (
+    parentSectionId: number,
     block: LessonBlockItem,
     fields: Omit<LessonBlockItem, 'id'>,
   ) => {
     if (!lesson) return;
-    const sid = block.sectionId;
-    if (sid == null) return;
+    const sectionId = block.sectionId ?? parentSectionId;
+
+    if (fields.type === 'YOUTUBE' && !fields.content?.trim()) {
+      toast.error(t('lesson.youtubeUrlRequired'));
+      return;
+    }
+
     setSavingBlockId(block.id);
     try {
       const { data } = await lessonsApi.updateBlock(lessonId, block.id, {
         type: fields.type as LessonBlockType,
         title: fields.title,
-        content: fields.content,
+        content: fields.content?.trim() ?? '',
         extra: fields.extra,
         sortOrder: fields.sortOrder,
-        sectionId: sid,
+        sectionId,
       });
       setLesson({
         ...lesson,
         sections: (lesson.sections ?? []).map((s) =>
-          s.id === sid
+          s.id === sectionId
             ? {
                 ...s,
                 blocks: (s.blocks ?? []).map((b) =>
-                  b.id === block.id ? data : b,
+                  b.id === block.id ? { ...data, sectionId } : b,
                 ),
               }
             : s,
@@ -295,10 +301,12 @@ export function LessonEditPage() {
     }
   };
 
-  const deleteBlock = async (block: LessonBlockItem) => {
+  const deleteBlock = async (
+    parentSectionId: number,
+    block: LessonBlockItem,
+  ) => {
     if (!lesson) return;
-    const sid = block.sectionId;
-    if (sid == null) return;
+    const sectionId = block.sectionId ?? parentSectionId;
     const ok = await confirm({
       message: t('lesson.deleteConfirm'),
       variant: 'danger',
@@ -310,7 +318,7 @@ export function LessonEditPage() {
       setLesson({
         ...lesson,
         sections: (lesson.sections ?? []).map((s) =>
-          s.id === sid
+          s.id === sectionId
             ? {
                 ...s,
                 blocks: (s.blocks ?? []).filter((b) => b.id !== block.id),
@@ -553,9 +561,13 @@ export function LessonEditPage() {
                 sectionNumber={index + 1}
                 saving={savingBlockId === block.id}
                 onSave={(fields: Any) =>
-                  saveBlock(block, fields as Omit<LessonBlockItem, 'id'>)
+                  saveBlock(
+                    section.id,
+                    block,
+                    fields as Omit<LessonBlockItem, 'id'>,
+                  )
                 }
-                onDelete={() => deleteBlock(block)}
+                onDelete={() => deleteBlock(section.id, block)}
                 onMoveUp={
                   index > 0 ? () => moveBlock(section.id, block, -1) : undefined
                 }

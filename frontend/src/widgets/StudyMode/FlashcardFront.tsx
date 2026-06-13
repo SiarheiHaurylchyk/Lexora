@@ -6,17 +6,31 @@ interface FlashcardFrontProps {
   card: StudyCard;
   /** Language label shown at the top (e.g. "en"). */
   languageLabel: string;
+  /** True when this card has been marked Hard before and is being repeated. */
+  isRepeat?: boolean;
 }
 
 /**
  * Front side of the flashcard. Shows the term in big font, optional
  * transcription, optional example sentence and a short hint to flip.
+ * When `isRepeat` is true, a small "repeat" badge appears in the top-right
+ * corner so the user knows this card is cycling back.
  */
-export function FlashcardFront({ card, languageLabel }: FlashcardFrontProps) {
+export function FlashcardFront({
+  card,
+  languageLabel,
+  isRepeat,
+}: FlashcardFrontProps) {
   const { t } = useTranslation();
 
   return (
     <>
+      {isRepeat && (
+        <span className='bg-warning/15 text-warning absolute top-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-semibold'>
+          🔁 {t('study.flashcard.repeatBadge')}
+        </span>
+      )}
+
       <div className='text-text3 mb-3 text-xs tracking-[0.08em] uppercase'>
         {t('study.flashcard.reveal', { lang: languageLabel })}
       </div>

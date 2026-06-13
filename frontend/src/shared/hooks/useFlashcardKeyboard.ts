@@ -1,62 +1,64 @@
 import { useEffect } from 'react';
 
 interface Options {
-  /** Перевернута ли карточка — от этого зависит поведение стрелок. */
+  /** Карточка сейчас показывает обратную сторону. */
   flipped: boolean;
   /** Перевернуть карточку (Space). */
   onFlip: () => void;
-  /** Стрелка влево, когда карточка НЕ перевернута: предыдущая карточка. */
-  onPrevCard: () => void;
-  /** Стрелка вправо, когда карточка НЕ перевернута: следующая карточка. */
-  onNextCard: () => void;
-  /** Стрелка влево, когда карточка перевернута: оценка «Сложно». */
+  /**
+   * ← Стрелка после переворота — отметить как «Сложно».
+   * Карточка попадёт в конец очереди повторов.
+   */
   onHard: () => void;
-  /** Стрелка вправо, когда карточка перевернута: оценка «Легко». */
+  /**
+   * → Стрелка после переворота — отметить как «Знаю».
+   * Карточка убирается из очереди на эту сессию.
+   */
   onEasy: () => void;
 }
 
 /**
- * Хук «горячие клавиши» для режима обучения «Карточки».
+ * Горячие клавиши для режима Flashcard.
  *
- * - Пробел — перевернуть карточку.
- * - ← → — листать карточки (если не перевернута) или оценивать (если перевернута).
+ * - Space   → перевернуть карточку.
+ * - ←       → (после переворота) «Сложно» / «Ещё раз».
+ * - →       → (после переворота) «Знаю» / «Легко».
  *
- * Игнорирует клавиши, нажатые внутри INPUT/TEXTAREA — чтобы не мешать
- * пользователю вводить текст в других местах страницы.
+ * Нажатия внутри INPUT и TEXTAREA игнорируются, чтобы не мешать вводу на странице.
  */
 export function useFlashcardKeyboard({
   flipped,
   onFlip,
-  onPrevCard,
-  onNextCard,
   onHard,
   onEasy,
 }: Options): void {
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      // Не перехватывать ввод в полях формы
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const pressedInsideInput =
+        (e.target as HTMLElement | null)?.tagName === 'INPUT' ||
+        (e.target as HTMLElement | null)?.tagName === 'TEXTAREA';
+
+      if (pressedInsideInput) return;
 
       if (e.code === 'Space') {
         e.preventDefault();
         onFlip();
         return;
       }
-      if (e.code === 'ArrowLeft') {
+
+      if (e.code === 'ArrowLeft' && flipped) {
         e.preventDefault();
-        if (flipped) onHard();
-        else onPrevCard();
+        onHard();
         return;
       }
-      if (e.code === 'ArrowRight') {
+
+      if (e.code === 'ArrowRight' && flipped) {
         e.preventDefault();
-        if (flipped) onEasy();
-        else onNextCard();
+        onEasy();
       }
     };
 
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [flipped, onFlip, onPrevCard, onNextCard, onHard, onEasy]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [flipped, onFlip, onHard, onEasy]);
 }

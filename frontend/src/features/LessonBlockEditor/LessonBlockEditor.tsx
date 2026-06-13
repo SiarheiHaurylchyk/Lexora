@@ -135,7 +135,7 @@ export function LessonBlockEditor({
       {preview ? (
         <LessonBlockView block={draft} />
       ) : (
-        <BlockFields draft={draft} update={update} />
+        <BlockFields draft={draft} savedBlock={block} update={update} />
       )}
 
       <div className='mt-2.5 flex justify-end'>
@@ -149,9 +149,11 @@ export function LessonBlockEditor({
 
 function BlockFields({
   draft,
+  savedBlock,
   update,
 }: {
   draft: LessonBlockItem;
+  savedBlock: LessonBlockItem;
   update: <K extends keyof LessonBlockItem>(
     field: K,
     value: LessonBlockItem[K],
@@ -221,14 +223,13 @@ function BlockFields({
         </div>
       );
 
-    case 'YOUTUBE':
+    case 'YOUTUBE': {
+      const draftUrl = (draft.content || '').trim();
+      const savedUrl = (savedBlock.content || '').trim();
+      const hasUnsavedYoutubeUrl = draftUrl !== savedUrl;
+
       return (
         <div className='flex flex-col gap-3'>
-          <TextInput
-            label={t('lesson.titleOptional')}
-            value={draft.title || ''}
-            onChange={(e) => update('title', e.target.value)}
-          />
           <TextInput
             label={t('lesson.youtubeUrl')}
             value={draft.content || ''}
@@ -236,16 +237,27 @@ function BlockFields({
             placeholder='https://www.youtube.com/watch?v=...'
             hint={t('lesson.youtubeHint')}
           />
-          {draft.content && (
+          <TextInput
+            label={t('lesson.titleOptional')}
+            value={draft.title || ''}
+            onChange={(e) => update('title', e.target.value)}
+          />
+          {draftUrl && (
             <div>
               <div className='mb-1.5 text-[12px] text-[var(--text3)]'>
                 {t('lesson.preview')}:
               </div>
-              <YouTubePlayer url={draft.content} />
+              <YouTubePlayer url={draftUrl} />
             </div>
+          )}
+          {hasUnsavedYoutubeUrl && draftUrl && (
+            <p className='m-0 text-[12px] text-orange-500'>
+              {t('lesson.youtubeUnsavedHint')}
+            </p>
           )}
         </div>
       );
+    }
 
     case 'LINK':
       return (

@@ -85,6 +85,7 @@ export function StudyPage() {
     cardLookup,
     mode,
     deckUrlId,
+    dueCount,
     handleComplete,
     handleRetry,
   } = useStudySession();
@@ -128,6 +129,23 @@ export function StudyPage() {
       </div>
 
       <div className='flex-1 px-4 py-4'>
+        {/* Banner: "X cards are due for review → switch to REVIEW mode" */}
+        {mode !== 'REVIEW' && dueCount > 0 && phase === 'study' && (
+          <div className='border-brand/20 bg-brand/8 mb-4 flex flex-wrap items-center gap-3 rounded-[14px] border px-4 py-3'>
+            <span>🧠</span>
+            <span className='text-text2 flex-1 text-sm'>
+              {t('study.dueCardsBanner', { count: dueCount })}
+            </span>
+            <button
+              type='button'
+              className='btn btn-primary btn-sm shrink-0'
+              onClick={() => navigate(`/decks/${deckUrlId}/study/REVIEW`)}
+            >
+              {t('study.startReview')}
+            </button>
+          </div>
+        )}
+
         {phase === 'result' ? (
           <StudyResultScreen
             results={results}

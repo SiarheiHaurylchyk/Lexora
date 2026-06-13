@@ -6,5 +6,7 @@ export { LearnMode } from './LearnMode';
 export { MatchMode } from './MatchMode';
 export { ScrambleMode } from './ScrambleMode';
 export { SpellMode } from './SpellMode';
+export type { StudyDirOption } from './StudyModeGrid';
+export { StudyModeGrid } from './StudyModeGrid';
 export { StudyResultScreen } from './StudyResultScreen';
 export type { StudyModeProps } from './types';
